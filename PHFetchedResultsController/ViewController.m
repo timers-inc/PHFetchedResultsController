@@ -89,44 +89,45 @@ static CGSize AssetGridThumbnailSize;
 }
 
 #pragma mark - PHPhotoLibraryChangeObserver
-/*
+
 - (void)photoLibraryDidChange:(PHChange *)changeInstance {
-    PHFetchResultChangeDetails *collectionChanges = [changeInstance changeDetailsForFetchResult:self.assetsFetchResults];
-    if (collectionChanges == nil) {
-        return;
-    }
     
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self.assetsFetchResults = [collectionChanges fetchResultAfterChanges];
-        
-        UICollectionView *collectionView = self.collectionView;
-        
-        if (![collectionChanges hasIncrementalChanges] || [collectionChanges hasMoves]) {
-            [collectionView reloadData];
-            
-        } else {
-            [collectionView performBatchUpdates:^{
-                NSIndexSet *removedIndexes = [collectionChanges removedIndexes];
-                if ([removedIndexes count] > 0) {
-                    [collectionView deleteItemsAtIndexPaths:[removedIndexes aapl_indexPathsFromIndexesWithSection:0]];
-                }
-                
-                NSIndexSet *insertedIndexes = [collectionChanges insertedIndexes];
-                if ([insertedIndexes count] > 0) {
-                    [collectionView insertItemsAtIndexPaths:[insertedIndexes aapl_indexPathsFromIndexesWithSection:0]];
-                }
-                
-                NSIndexSet *changedIndexes = [collectionChanges changedIndexes];
-                if ([changedIndexes count] > 0) {
-                    [collectionView reloadItemsAtIndexPaths:[changedIndexes aapl_indexPathsFromIndexesWithSection:0]];
-                }
-            } completion:NULL];
-        }
-        
-        [self resetCachedAssets];
-    });
+//    PHFetchResultChangeDetails *collectionChanges = [changeInstance changeDetailsForFetchResult:self.assetsFetchResults];
+//    if (collectionChanges == nil) {
+//        return;
+//    }
+//    
+//    dispatch_async(dispatch_get_main_queue(), ^{
+//        self.assetsFetchResults = [collectionChanges fetchResultAfterChanges];
+//        
+//        UICollectionView *collectionView = self.collectionView;
+//        
+//        if (![collectionChanges hasIncrementalChanges] || [collectionChanges hasMoves]) {
+//            [collectionView reloadData];
+//            
+//        } else {
+//            [collectionView performBatchUpdates:^{
+//                NSIndexSet *removedIndexes = [collectionChanges removedIndexes];
+//                if ([removedIndexes count] > 0) {
+//                    [collectionView deleteItemsAtIndexPaths:[removedIndexes aapl_indexPathsFromIndexesWithSection:0]];
+//                }
+//                
+//                NSIndexSet *insertedIndexes = [collectionChanges insertedIndexes];
+//                if ([insertedIndexes count] > 0) {
+//                    [collectionView insertItemsAtIndexPaths:[insertedIndexes aapl_indexPathsFromIndexesWithSection:0]];
+//                }
+//                
+//                NSIndexSet *changedIndexes = [collectionChanges changedIndexes];
+//                if ([changedIndexes count] > 0) {
+//                    [collectionView reloadItemsAtIndexPaths:[changedIndexes aapl_indexPathsFromIndexesWithSection:0]];
+//                }
+//            } completion:NULL];
+//        }
+//        
+//        [self resetCachedAssets];
+//    });
 }
-*/
+
 - (UICollectionView *)collectionView
 {
     if (_collectionView) {
@@ -243,15 +244,23 @@ static CGSize AssetGridThumbnailSize;
         NSArray *assetsToStartCaching = [self assetsAtIndexPaths:addedIndexPaths];
         NSArray *assetsToStopCaching = [self assetsAtIndexPaths:removedIndexPaths];
         
+        PHImageRequestOptions *imageRequestOptions = [PHImageRequestOptions new];
+        imageRequestOptions.resizeMode = PHImageRequestOptionsResizeModeNone;
+        imageRequestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+        imageRequestOptions.synchronous = YES;
+        
+        CGFloat scale = [UIScreen mainScreen].scale;
+        CGSize size = CGSizeMake(AssetGridThumbnailSize.width * scale, AssetGridThumbnailSize.height * scale);
+        
         // Update the assets the PHCachingImageManager is caching.
         [self.imageManager startCachingImagesForAssets:assetsToStartCaching
-                                            targetSize:AssetGridThumbnailSize
+                                            targetSize:size
                                            contentMode:PHImageContentModeAspectFill
-                                               options:nil];
+                                               options:imageRequestOptions];
         [self.imageManager stopCachingImagesForAssets:assetsToStopCaching
-                                           targetSize:AssetGridThumbnailSize
+                                           targetSize:size
                                           contentMode:PHImageContentModeAspectFill
-                                              options:nil];
+                                              options:imageRequestOptions];
         
         // Store the preheat rect to compare against in the future.
         self.previousPreheatRect = preheatRect;
@@ -313,8 +322,7 @@ static CGSize AssetGridThumbnailSize;
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyDay cacheName:nil];
-    
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyYear cacheName:nil];
     return _fetchedResultsController;
 }
 

@@ -12,7 +12,7 @@
 
 
 typedef NS_ENUM(NSUInteger, PHFetchedResultsSectionKey) {
-    PHFetchedResultsSectionKeyYear,
+    PHFetchedResultsSectionKeyYear = 0,
     PHFetchedResultsSectionKeyMonth,
     PHFetchedResultsSectionKeyDay
 };
@@ -20,6 +20,7 @@ typedef NS_ENUM(NSUInteger, PHFetchedResultsSectionKey) {
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol PHFetchedResultsSectionInfo;
+@protocol PHFetchedResultsControllerDelegate;
 
 @interface PHFetchedResultsController : NSObject
 
@@ -28,9 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) PHAssetCollection *assetCollection;
 @property (nonatomic, readonly) PHFetchedResultsSectionKey sectionKey;
 @property (nullable, nonatomic, readonly) NSString *cacheName;
+@property (nullable, nonatomic, readonly) PHFetchResult <PHAsset *>*fetchedObjects;
 
-
-@property  (nullable, nonatomic, readonly) PHFetchResult <PHAsset *>*fetchedObjects;
+@property (nonatomic, weak) id <PHFetchedResultsControllerDelegate> delegate;
 
 /* Returns the fetched Asset at a given indexPath.
  */
@@ -43,8 +44,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSString *)sectionIndexTitleForSectionName:(NSString *)sectionName;
 
 @property (nonatomic, readonly) NSArray<NSString *> *sectionIndexTitles;
-
-
 
 @property (nullable, nonatomic, readonly) NSArray<id<PHFetchedResultsSectionInfo>> *sections;
 
@@ -69,6 +68,13 @@ NS_ASSUME_NONNULL_BEGIN
 /* Returns the array of objects in the section.
  */
 @property (nullable, nonatomic, readonly) NSArray *objects;
+
+@end
+
+
+@protocol PHFetchedResultsControllerDelegate <NSObject>
+
+- (NSArray <NSString *>*)controllerIgnoreLocalIDs:(PHFetchedResultsController *)controller;
 
 @end
 
