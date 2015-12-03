@@ -41,11 +41,16 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSIndexPath *)indexPathForAsset:(PHAsset *)asset;
 
+/* Returns the corresponding section index entry for a given section name.
+ Default implementation returns the capitalized first letter of the section name.
+ Only needed if a section index is used.
+ */
 - (nullable NSString *)sectionIndexTitleForSectionName:(NSString *)sectionName;
 
 @property (nonatomic, readonly) NSArray<NSString *> *sectionIndexTitles;
 
 @property (nullable, nonatomic, readonly) NSArray<id<PHFetchedResultsSectionInfo>> *sections;
+
 
 - (NSInteger)sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)sectionIndex;
 
