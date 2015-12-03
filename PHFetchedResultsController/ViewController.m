@@ -16,7 +16,6 @@
 
 @implementation ViewController
 
-static NSString * const CellReuseIdentifier = @"Cell";
 static CGSize AssetGridThumbnailSize;
 
 + (void)loadAssetsLibraryWithComplitionHandler:(void (^)(BOOL authorized))complition
@@ -69,20 +68,25 @@ static CGSize AssetGridThumbnailSize;
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-
-    CGSize cellSize = CGSizeMake(80, 80);
-    AssetGridThumbnailSize = CGSizeMake(cellSize.width, cellSize.height);
-    
-}
-
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    
-    // Begin caching assets in and around collection view's visible rect.
     [self updateCachedAssets];
 }
 
-#pragma mark - PHPhotoLibraryChangeObserver
+
+- (PHFetchedResultsController *)fetchedResultsController
+{
+    if (_fetchedResultsController) {
+        return _fetchedResultsController;
+    }
+    
+    PHFetchResult *assetCollections = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
+                                                                               subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary
+                                                                               options:nil];
+    PHAssetCollection *assetCollection = assetCollections.firstObject;
+    
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyDay cacheName:nil];
+    _fetchedResultsController.delegate = self;
+    return _fetchedResultsController;
+}
 
 - (UICollectionView *)collectionView
 {
@@ -90,19 +94,16 @@ static CGSize AssetGridThumbnailSize;
         return _collectionView;
     }
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
+    layout.itemSize = CGSizeMake(80, 80);
+    layout.sectionInset = UIEdgeInsetsMake(10, 10, 10, 10);
+    CGFloat scale = [UIScreen mainScreen].scale;
+    AssetGridThumbnailSize = CGSizeMake(layout.itemSize.width * scale, layout.itemSize.height * scale);
     _collectionView = [[UICollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
     _collectionView.dataSource = self;
     _collectionView.delegate = self;
     _collectionView.allowsMultipleSelection = YES;
     return _collectionView;
 }
-
-- (UICollectionViewLayout *)collectionViewLayout
-{
-    return self.collectionView.collectionViewLayout;
-}
-
-#pragma mark - UICollectionViewDataSource
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
 {
@@ -119,7 +120,6 @@ static CGSize AssetGridThumbnailSize;
 {
     PHAsset *asset = [self.fetchedResultsController assetAtIndexPath:indexPath];
     
-    
     GridCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"GridCell" forIndexPath:indexPath];
     cell.representedAssetIdentifier = asset.localIdentifier;
     
@@ -128,11 +128,8 @@ static CGSize AssetGridThumbnailSize;
         cell.livePhotoBadgeImage = badge;
     }
     
-    CGFloat scale = [UIScreen mainScreen].scale;
-    CGSize size = CGSizeMake(AssetGridThumbnailSize.width * scale, AssetGridThumbnailSize.height * scale);
-    
     [self.imageManager requestImageForAsset:asset
-                                 targetSize:size
+                                 targetSize:AssetGridThumbnailSize
                                 contentMode:PHImageContentModeAspectFill
                                     options:nil
                               resultHandler:^(UIImage *result, NSDictionary *info) {
@@ -141,25 +138,19 @@ static CGSize AssetGridThumbnailSize;
                                       cell.thumbnailImage = result;
                                   }
                                   
-                                  //NSLog(@"%@", info);
                               }];
-    
-
     
     return cell;
 }
 
-- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    return AssetGridThumbnailSize;
+    [self.collectionView performBatchUpdates:^{
+        [self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section]];
+    } completion:nil];
 }
 
-- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout referenceSizeForHeaderInSection:(NSInteger)section
-{
-    return CGSizeMake([UIScreen mainScreen].bounds.size.width, 40);
-}
-
-#pragma mark - UIScrollViewDelegate
+#pragma mark - 
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     // Update cached assets for the new visible area.
@@ -208,16 +199,13 @@ static CGSize AssetGridThumbnailSize;
         imageRequestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
         imageRequestOptions.version = PHImageRequestOptionsVersionOriginal;
         
-        CGFloat scale = [UIScreen mainScreen].scale;
-        CGSize size = CGSizeMake(AssetGridThumbnailSize.width * scale, AssetGridThumbnailSize.height * scale);
-        
         // Update the assets the PHCachingImageManager is caching.
         [self.imageManager startCachingImagesForAssets:assetsToStartCaching
-                                            targetSize:size
+                                            targetSize:AssetGridThumbnailSize
                                            contentMode:PHImageContentModeAspectFill
                                                options:imageRequestOptions];
         [self.imageManager stopCachingImagesForAssets:assetsToStopCaching
-                                           targetSize:size
+                                           targetSize:AssetGridThumbnailSize
                                           contentMode:PHImageContentModeAspectFill
                                               options:imageRequestOptions];
         
@@ -270,27 +258,15 @@ static CGSize AssetGridThumbnailSize;
     return assets;
 }
 
-- (PHFetchedResultsController *)fetchedResultsController
-{
-    if (_fetchedResultsController) {
-        return _fetchedResultsController;
-    }
-    
-    PHFetchResult *assetCollections = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
-                                                                               subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary
-                                                                               options:nil];
-    PHAssetCollection *assetCollection = assetCollections.firstObject;
-    
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyDay cacheName:nil];
-    _fetchedResultsController.delegate = self;
-    return _fetchedResultsController;
-}
-
-#pragma mark - 
-
 - (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails
 {
-    NSLog(@"details %@", changeDetails);
+    
+    [self.collectionView performBatchUpdates:^{
+        [self.collectionView deleteSections:changeDetails.removedIndexes];
+        [self.collectionView insertSections:changeDetails.insertedIndexes];
+        [self.collectionView reloadSections:changeDetails.updatedIndexes];
+    } completion:nil];
+    
 }
 
 @end

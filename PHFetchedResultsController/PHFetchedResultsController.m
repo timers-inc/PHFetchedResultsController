@@ -24,7 +24,7 @@
 @property (nonatomic, readonly) PHFetchOptions *options;
 @property (nonatomic, readonly) PHAssetCollection *assetCollection;
 @property (nonatomic, readonly) NSDateComponents *dateComponents;
-@property (nonatomic) NSUInteger numberOfObjects;
+@property (nonatomic, readwrite) NSUInteger numberOfObjects;
 @property (nonatomic, weak) id <PHFetchedResultsSectionInfoDelegate> delegate;
 
 - (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection
@@ -36,6 +36,7 @@
 @implementation PHFetchedResultsSectionInfo
 {
     NSCache *_cache;
+    NSUInteger _numberOfObjects;
 }
 
 - (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection
@@ -69,6 +70,12 @@
 - (NSInteger)day
 {
     return [self.dateComponents day];
+}
+
+- (void)setNumberOfObjects:(NSUInteger)numberOfObjects
+{
+    _numberOfObjects = numberOfObjects;
+    [self removeCache];
 }
 
 #pragma mark - PHFetchedResultsSectionInfo
@@ -127,6 +134,12 @@
 {
     PHAsset *asset = self.objects[index];
     return asset;
+}
+
+- (void)removeCache
+{
+    NSString *name = [self name];
+    [_cache removeObjectForKey:name];
 }
 
 @end
@@ -214,7 +227,7 @@
         
         _mySections = [NSMutableArray array];
         _options = [PHFetchOptions new];
-        _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:YES]];
+        _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
         
         self.fetchResult = [PHAsset fetchAssetsInAssetCollection:assetCollection options:_options];
         [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
@@ -281,11 +294,9 @@
                     previousMonth = month;
                     previousDay = day;
                     sectionInfo = info;
-                    
                 }
             }
         }
-    
     }];
 }
 
@@ -351,7 +362,7 @@
     return sectionIndexTitle;
 }
 
-- (NSUInteger)sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)sectionIndex
+- (NSInteger)sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)sectionIndex
 {
     return 0;
 }
@@ -367,7 +378,7 @@
     return (NSArray *)titles;
 }
 
-- (NSUInteger)indexForSectionInfo:(PHFetchedResultsSectionInfo *)sectionInfo
+- (NSInteger)indexForSectionInfo:(PHFetchedResultsSectionInfo *)sectionInfo
 {
     return [_mySections indexOfObject:sectionInfo];
 }
@@ -525,7 +536,7 @@
             }];
         }
         
-        // change
+        // update
         NSArray <PHAsset *>*updatedObjects = [changesDetails changedObjects];
         if (updatedObjects.count > 0) {
             __block NSInteger previousYear = 0;
@@ -565,7 +576,6 @@
                             sectionInfo = obj;
                             
                             [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-                            
                             *stop = YES;
                         }
                     }];
@@ -573,8 +583,9 @@
                 }
             }];
         }
-        
-        [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
+        });
     }
 }
 
