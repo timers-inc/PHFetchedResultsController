@@ -8,7 +8,7 @@
 
 #import "ViewController.h"
 
-@interface ViewController () <PHPhotoLibraryChangeObserver>
+@interface ViewController () <PHFetchedResultsControllerDelegate>
 @property (nonatomic, strong) PHCachingImageManager *imageManager;
 @property CGRect previousPreheatRect;
 
@@ -43,10 +43,6 @@ static CGSize AssetGridThumbnailSize;
     }
 }
 
-- (void)dealloc {
-    [[PHPhotoLibrary sharedPhotoLibrary] unregisterChangeObserver:self];
-}
-
 - (PHCachingImageManager *)imageManager
 {
     if (_imageManager) {
@@ -67,8 +63,6 @@ static CGSize AssetGridThumbnailSize;
     [super viewDidLoad];
     self.collectionView.backgroundColor = [UIColor whiteColor];
     [self.collectionView registerClass:[GridCell class] forCellWithReuseIdentifier:@"GridCell"];
-    
-    [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
     [self resetCachedAssets];
 
 }
@@ -89,44 +83,6 @@ static CGSize AssetGridThumbnailSize;
 }
 
 #pragma mark - PHPhotoLibraryChangeObserver
-
-- (void)photoLibraryDidChange:(PHChange *)changeInstance {
-    
-//    PHFetchResultChangeDetails *collectionChanges = [changeInstance changeDetailsForFetchResult:self.assetsFetchResults];
-//    if (collectionChanges == nil) {
-//        return;
-//    }
-//    
-//    dispatch_async(dispatch_get_main_queue(), ^{
-//        self.assetsFetchResults = [collectionChanges fetchResultAfterChanges];
-//        
-//        UICollectionView *collectionView = self.collectionView;
-//        
-//        if (![collectionChanges hasIncrementalChanges] || [collectionChanges hasMoves]) {
-//            [collectionView reloadData];
-//            
-//        } else {
-//            [collectionView performBatchUpdates:^{
-//                NSIndexSet *removedIndexes = [collectionChanges removedIndexes];
-//                if ([removedIndexes count] > 0) {
-//                    [collectionView deleteItemsAtIndexPaths:[removedIndexes aapl_indexPathsFromIndexesWithSection:0]];
-//                }
-//                
-//                NSIndexSet *insertedIndexes = [collectionChanges insertedIndexes];
-//                if ([insertedIndexes count] > 0) {
-//                    [collectionView insertItemsAtIndexPaths:[insertedIndexes aapl_indexPathsFromIndexesWithSection:0]];
-//                }
-//                
-//                NSIndexSet *changedIndexes = [collectionChanges changedIndexes];
-//                if ([changedIndexes count] > 0) {
-//                    [collectionView reloadItemsAtIndexPaths:[changedIndexes aapl_indexPathsFromIndexesWithSection:0]];
-//                }
-//            } completion:NULL];
-//        }
-//        
-//        [self resetCachedAssets];
-//    });
-}
 
 - (UICollectionView *)collectionView
 {
@@ -184,8 +140,11 @@ static CGSize AssetGridThumbnailSize;
                                   if ([cell.representedAssetIdentifier isEqualToString:asset.localIdentifier]) {
                                       cell.thumbnailImage = result;
                                   }
+                                  
+                                  //NSLog(@"%@", info);
                               }];
     
+
     
     return cell;
 }
@@ -246,8 +205,8 @@ static CGSize AssetGridThumbnailSize;
         
         PHImageRequestOptions *imageRequestOptions = [PHImageRequestOptions new];
         imageRequestOptions.resizeMode = PHImageRequestOptionsResizeModeNone;
-        imageRequestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-        imageRequestOptions.synchronous = YES;
+        imageRequestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
+        imageRequestOptions.version = PHImageRequestOptionsVersionOriginal;
         
         CGFloat scale = [UIScreen mainScreen].scale;
         CGSize size = CGSizeMake(AssetGridThumbnailSize.width * scale, AssetGridThumbnailSize.height * scale);
@@ -322,9 +281,16 @@ static CGSize AssetGridThumbnailSize;
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyYear cacheName:nil];
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyDay cacheName:nil];
+    _fetchedResultsController.delegate = self;
     return _fetchedResultsController;
 }
 
+#pragma mark - 
+
+- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails
+{
+    NSLog(@"details %@", changeDetails);
+}
 
 @end

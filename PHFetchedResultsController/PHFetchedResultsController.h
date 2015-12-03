@@ -71,10 +71,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@interface PHFetchedResultsSectionChangeDetails : NSObject
+
+@property (atomic, strong, readonly, nullable) NSIndexSet *removedIndexes;
+@property (atomic, strong, readonly, nullable) NSIndexSet *insertedIndexes;
+@property (atomic, strong, readonly, nullable) NSIndexSet *updatedIndexes;
+
+@end
 
 @protocol PHFetchedResultsControllerDelegate <NSObject>
 
+@optional
 - (NSArray <NSString *>*)controllerIgnoreLocalIDs:(PHFetchedResultsController *)controller;
+@required
+- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails;
 
 @end
 
