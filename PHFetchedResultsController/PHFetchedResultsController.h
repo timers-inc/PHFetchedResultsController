@@ -14,7 +14,9 @@
 typedef NS_ENUM(NSUInteger, PHFetchedResultsSectionKey) {
     PHFetchedResultsSectionKeyYear = 0,
     PHFetchedResultsSectionKeyMonth,
-    PHFetchedResultsSectionKeyDay
+    PHFetchedResultsSectionKeyWeek,
+    PHFetchedResultsSectionKeyDay,
+    PHFetchedResultsSectionKeyHour
 };
 
 NS_ASSUME_NONNULL_BEGIN

@@ -77,7 +77,6 @@ static CGSize AssetGridThumbnailSize;
     if (_fetchedResultsController) {
         return _fetchedResultsController;
     }
-    
     PHFetchResult *assetCollections = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
                                                                                subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary
                                                                                options:nil];

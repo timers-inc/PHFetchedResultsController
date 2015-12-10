@@ -20,7 +20,9 @@
 
 @property (nonatomic, readonly) NSInteger year;
 @property (nonatomic, readonly) NSInteger month;
+@property (nonatomic, readonly) NSInteger week;
 @property (nonatomic, readonly) NSInteger day;
+@property (nonatomic, readonly) NSInteger hour;
 @property (nonatomic, readonly) PHFetchOptions *options;
 @property (nonatomic, readonly) PHAssetCollection *assetCollection;
 @property (nonatomic, readonly) NSDateComponents *dateComponents;
@@ -47,8 +49,7 @@
     if (self) {
         _cache = [NSCache new];
         NSCalendar *calendar = [NSCalendar currentCalendar];
-        _dateComponents = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay
-                                                      fromDate:date];
+        _dateComponents = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:date];
         _assetCollection = assetCollection;
         _options = options;
         _numberOfObjects = 1;
@@ -67,9 +68,19 @@
     return [self.dateComponents month];
 }
 
+- (NSInteger)week
+{
+    return [self.dateComponents weekOfMonth];
+}
+
 - (NSInteger)day
 {
     return [self.dateComponents day];
+}
+
+- (NSInteger)hour
+{
+    return [self.dateComponents hour];
 }
 
 - (void)setNumberOfObjects:(NSUInteger)numberOfObjects
@@ -144,8 +155,6 @@
 
 @end
 
-
-
 @implementation PHFetchedResultsSectionChangeDetails
 {
     NSMutableIndexSet *__removedIndexes;
@@ -205,7 +214,6 @@
 
 @end
 
-
 @interface PHFetchedResultsController () <PHFetchedResultsSectionInfoDelegate, PHPhotoLibraryChangeObserver>
 
 @property (nonatomic)   PHFetchOptions *options;
@@ -248,7 +256,9 @@
     
     __block NSInteger previousYear = 0;
     __block NSInteger previousMonth = 0;
+    __block NSInteger previousWeek = 0;
     __block NSInteger previousDay = 0;
+    __block NSInteger previousHour = 0;
     
     __block PHFetchedResultsSectionInfo *sectionInfo = nil;
     
@@ -260,12 +270,16 @@
             
             NSInteger year = [dateComponets year];
             NSInteger month = [dateComponets month];
+            NSInteger week = [dateComponets weekOfMonth];
             NSInteger day = [dateComponets day];
+            NSInteger hour = [dateComponets hour];
             
             __block BOOL isYear = previousYear == year;
             __block BOOL isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES);
+            __block BOOL isWeek = (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? previousWeek == week : YES);
             __block BOOL isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES);
-            __block BOOL sectionExist = isYear && isMonth && isDay ;
+            __block BOOL isHour = (self.sectionKey >= PHFetchedResultsSectionKeyHour ? previousHour == hour : YES);
+            __block BOOL sectionExist = isYear && isMonth && isWeek && isDay && isHour;
             
             if (sectionExist) {
                 
@@ -300,6 +314,96 @@
     }];
 }
 
+- (void)findSectionInfoInAssets:(NSArray <PHAsset *>*)assets
+                         exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
+                      notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset))noExistsBlock
+                     completion:(void (^)(NSArray *sections))completionHandler
+{
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    
+    __block NSInteger previousYear = 0;
+    __block NSInteger previousMonth = 0;
+    __block NSInteger previousWeek = 0;
+    __block NSInteger previousDay = 0;
+    __block NSInteger previousHour = 0;
+    
+    __block PHFetchedResultsSectionInfo *sectionInfo = nil;
+    
+    [assets enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
+        
+        @autoreleasepool {
+            NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:asset.creationDate];
+            
+            NSInteger year = [dateComponets year];
+            NSInteger month = [dateComponets month];
+            NSInteger week = [dateComponets weekOfMonth];
+            NSInteger day = [dateComponets day];
+            NSInteger hour = [dateComponets hour];
+            
+            __block BOOL isYear = previousYear == year;
+            __block BOOL isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES);
+            __block BOOL isWeek = (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? previousWeek == week : YES);
+            __block BOOL isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES);
+            __block BOOL isHour = (self.sectionKey >= PHFetchedResultsSectionKeyHour ? previousHour == hour : YES);
+            
+            
+            if (previousYear == year &&
+                (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES) &&
+                (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? previousWeek == week : YES) &&
+                (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES) &&
+                (self.sectionKey >= PHFetchedResultsSectionKeyHour ? previousHour == hour : YES)) {
+            
+                if (existsBlock) {
+                    existsBlock(sectionInfo);
+                }
+                
+            } else {
+                
+                __block BOOL sectionExist = NO;
+                
+                [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
+                    
+                    isYear = aSectionInfo.year == year;
+                    isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES);
+                    isWeek = (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES);
+                    isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? aSectionInfo.day == day : YES);
+                    isHour = (self.sectionKey >= PHFetchedResultsSectionKeyHour ? aSectionInfo.hour == hour : YES);
+                    
+                    if (aSectionInfo.year == year &&
+                        (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
+                        (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
+                        (self.sectionKey >= PHFetchedResultsSectionKeyDay ? aSectionInfo.day == day : YES) &&
+                        (self.sectionKey >= PHFetchedResultsSectionKeyHour ? aSectionInfo.hour == hour : YES)) {
+                        sectionExist = YES;
+                        sectionInfo = aSectionInfo;
+                        *stop = YES;
+                    }
+                }];
+                
+                if (sectionExist) {
+                    
+                    if (existsBlock) {
+                        existsBlock(sectionInfo);
+                    }
+                    
+                } else {
+                    
+                    if (noExistsBlock) {
+                        sectionInfo = noExistsBlock(asset);
+                    }
+                    
+                    previousYear = year;
+                    previousMonth = month;
+                    previousWeek = week;
+                    previousDay = day;
+                    previousHour = hour;
+                }
+            }
+        }
+    }];
+    
+}
+
 - (NSArray<id<PHFetchedResultsSectionInfo>> *)sections
 {
     return (NSArray *)self.mySections;
@@ -324,7 +428,9 @@
     
     NSInteger year = [dateComponets year];
     NSInteger month = [dateComponets month];
+    NSInteger week = [dateComponets weekOfMonth];
     NSInteger day = [dateComponets day];
+    NSInteger hour = [dateComponets hour];
     
     __block PHFetchedResultsSectionInfo *sectionInfo = nil;
     __block NSInteger section;
