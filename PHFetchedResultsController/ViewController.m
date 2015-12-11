@@ -81,7 +81,7 @@ static CGSize AssetGridThumbnailSize;
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyHour cacheName:nil];
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyWeek cacheName:nil];
     _fetchedResultsController.delegate = self;
     return _fetchedResultsController;
 }

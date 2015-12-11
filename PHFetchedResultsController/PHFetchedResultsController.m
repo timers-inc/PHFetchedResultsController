@@ -96,44 +96,8 @@
     if (_name) {
         return _name;
     }
-    
     NSDateFormatter *dateFormatter = [self.delegate dateFormatter];
-    NSDateComponents *dateComponents = [NSDateComponents new];
-    PHFetchedResultsSectionKey sectionKey = [self.delegate sectionInfoSectionKey];
-    switch (sectionKey) {
-        case PHFetchedResultsSectionKeyHour: {
-            [dateComponents setYear:self.year];
-            [dateComponents setMonth:self.month];
-            [dateComponents setWeekOfMonth:self.week];
-            [dateComponents setDay:self.day];
-            [dateComponents setHour:self.hour];
-        }
-            break;
-        case PHFetchedResultsSectionKeyDay: {
-            [dateComponents setYear:self.year];
-            [dateComponents setMonth:self.month];
-            [dateComponents setWeekOfMonth:self.week];
-            [dateComponents setDay:self.day];
-        }
-            break;
-        case PHFetchedResultsSectionKeyWeek: {
-            [dateComponents setYear:self.year];
-            [dateComponents setMonth:self.month];
-            [dateComponents setWeekOfMonth:self.week];
-        }
-            break;
-        case PHFetchedResultsSectionKeyMonth: {
-            [dateComponents setYear:self.year];
-            [dateComponents setMonth:self.month];
-        }
-            break;
-        case PHFetchedResultsSectionKeyYear:
-        default:{
-            [dateComponents setYear:self.year];
-        }
-            break;
-    }
-    NSDate *date = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
+    NSDate *date = [[NSCalendar currentCalendar] dateFromComponents:self.dateComponents];
     _name = [dateFormatter stringFromDate:date];
     return _name;
 }
@@ -153,7 +117,6 @@
     NSString *name = [self name];
     PHFetchResult *cacheResult = [_cache objectForKey:name];
     if (cacheResult) {
-        NSLog(@"cached %@", cacheResult);
         return cacheResult;
     }
     
@@ -193,6 +156,7 @@
             [dateComponents setYear:self.year];
             [dateComponents setMonth:self.month];
             [dateComponents setWeekOfMonth:self.week];
+            [dateComponents setWeekday:1];
             startDate = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
             [addDateComponents setWeekOfMonth:1];
             endDate = [calendar dateByAddingComponents:addDateComponents toDate:startDate options:0];
@@ -378,7 +342,7 @@
     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
             [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                NSLog(@"cache %@", [obj objects]);
+                [obj objects];
             }];
         });
     }];
@@ -564,13 +528,13 @@
     _dateFormatter = [NSDateFormatter new];
     switch (self.sectionInfoSectionKey) {
         case PHFetchedResultsSectionKeyHour:
-            _dateFormatter.dateFormat = @"yyyy-MM-w-dd-HH";
+            _dateFormatter.dateFormat = @"yyyy-MM-W-dd-HH";
             break;
         case PHFetchedResultsSectionKeyDay:
-            _dateFormatter.dateFormat = @"yyyy-MM-w-dd";
+            _dateFormatter.dateFormat = @"yyyy-MM-W-dd";
             break;
         case PHFetchedResultsSectionKeyWeek:
-            _dateFormatter.dateFormat = @"yyyy-MM-w";
+            _dateFormatter.dateFormat = @"yyyy-MM-W";
             break;
         case PHFetchedResultsSectionKeyMonth:
             _dateFormatter.dateFormat = @"yyyy-MM";
