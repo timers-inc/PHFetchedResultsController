@@ -18,6 +18,7 @@
 
 @interface PHFetchedResultsSectionInfo : NSObject <PHFetchedResultsSectionInfo>
 
+@property (nonatomic) NSString *name;
 @property (nonatomic, readonly) NSInteger year;
 @property (nonatomic, readonly) NSInteger month;
 @property (nonatomic, readonly) NSInteger week;
@@ -92,9 +93,49 @@
 
 - (NSString *)name
 {
+    if (_name) {
+        return _name;
+    }
+    
     NSDateFormatter *dateFormatter = [self.delegate dateFormatter];
-    NSDate *date = [[NSCalendar currentCalendar] dateFromComponents:self.dateComponents];
-    return [dateFormatter stringFromDate:date];
+    NSDateComponents *dateComponents = [NSDateComponents new];
+    PHFetchedResultsSectionKey sectionKey = [self.delegate sectionInfoSectionKey];
+    switch (sectionKey) {
+        case PHFetchedResultsSectionKeyHour: {
+            [dateComponents setYear:self.year];
+            [dateComponents setMonth:self.month];
+            [dateComponents setWeekOfMonth:self.week];
+            [dateComponents setDay:self.day];
+            [dateComponents setHour:self.hour];
+        }
+            break;
+        case PHFetchedResultsSectionKeyDay: {
+            [dateComponents setYear:self.year];
+            [dateComponents setMonth:self.month];
+            [dateComponents setWeekOfMonth:self.week];
+            [dateComponents setDay:self.day];
+        }
+            break;
+        case PHFetchedResultsSectionKeyWeek: {
+            [dateComponents setYear:self.year];
+            [dateComponents setMonth:self.month];
+            [dateComponents setWeekOfMonth:self.week];
+        }
+            break;
+        case PHFetchedResultsSectionKeyMonth: {
+            [dateComponents setYear:self.year];
+            [dateComponents setMonth:self.month];
+        }
+            break;
+        case PHFetchedResultsSectionKeyYear:
+        default:{
+            [dateComponents setYear:self.year];
+        }
+            break;
+    }
+    NSDate *date = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
+    _name = [dateFormatter stringFromDate:date];
+    return _name;
 }
 
 - (NSString *)indexTitle
@@ -112,6 +153,7 @@
     NSString *name = [self name];
     PHFetchResult *cacheResult = [_cache objectForKey:name];
     if (cacheResult) {
+        NSLog(@"cached %@", cacheResult);
         return cacheResult;
     }
     
@@ -164,7 +206,6 @@
             endDate = [calendar dateByAddingComponents:addDateComponents toDate:startDate options:0];
         }
             break;
-            
         case PHFetchedResultsSectionKeyYear:
         default:{
             [dateComponents setYear:self.year];
@@ -245,6 +286,27 @@
     [__updatedIndexes addIndex:index];
 }
 
+- (void)removeRemovedIndex:(NSUInteger)index
+{
+    if ([__removedIndexes containsIndex:index]) {
+        [__removedIndexes removeIndex:index];
+    }
+}
+
+- (void)removeInsertedIndex:(NSUInteger)index
+{
+    if ([__insertedIndexes containsIndex:index]) {
+        [__insertedIndexes removeIndex:index];
+    }
+}
+
+- (void)removeUpdatedIndex:(NSUInteger)index
+{
+    if ([__updatedIndexes containsIndex:index]) {
+        [__updatedIndexes removeIndex:index];
+    }
+}
+
 - (NSIndexSet *)removedIndexes
 {
     return (NSIndexSet *)__removedIndexes;
@@ -267,9 +329,9 @@
 @property (nonatomic)   PHFetchOptions *options;
 @property (nonatomic)   PHFetchResult <PHAsset *>*fetchResult;
 @property (nonatomic)   NSMutableArray <PHFetchedResultsSectionInfo *>*mySections;
+@property (nonatomic)   NSDateFormatter *dateFormatter;
 
 @end
-
 
 @implementation PHFetchedResultsController
 
@@ -300,18 +362,30 @@
 {
     _fetchResult = fetchResult;
     
-    [self findSectionInfoInAssets:_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+    [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull sectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
+        [sectionInfo removeCache];
+    }];
+    
+    [self.mySections removeAllObjects];
+    
+    [self findSectionInfoInAssets:(NSArray *)_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
         sectionInfo.numberOfObjects ++;
     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
         PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
         info.delegate = self;
         [_mySections addObject:info];
         return info;
-    } completion:nil];
+    } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+            [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                NSLog(@"cache %@", [obj objects]);
+            }];
+        });
+    }];
     
 }
 
-- (void)findSectionInfoInAssets:(PHFetchResult <PHAsset *>*)assets
+- (void)findSectionInfoInAssets:(NSArray <PHAsset *>*)assets
                          exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
                       notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset))notExistsBlock
                      completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
@@ -483,9 +557,30 @@
 
 - (NSDateFormatter *)dateFormatter
 {
-    NSDateFormatter *dateFormatter = [NSDateFormatter new];
-    dateFormatter.dateFormat = @"yyyy-MM-dd";
-    return dateFormatter;
+    if (_dateFormatter) {
+        return _dateFormatter;
+    }
+    
+    _dateFormatter = [NSDateFormatter new];
+    switch (self.sectionInfoSectionKey) {
+        case PHFetchedResultsSectionKeyHour:
+            _dateFormatter.dateFormat = @"yyyy-MM-w-dd-HH";
+            break;
+        case PHFetchedResultsSectionKeyDay:
+            _dateFormatter.dateFormat = @"yyyy-MM-w-dd";
+            break;
+        case PHFetchedResultsSectionKeyWeek:
+            _dateFormatter.dateFormat = @"yyyy-MM-w";
+            break;
+        case PHFetchedResultsSectionKeyMonth:
+            _dateFormatter.dateFormat = @"yyyy-MM";
+            break;
+        case PHFetchedResultsSectionKeyYear:
+        default:
+            _dateFormatter.dateFormat = @"yyyy";
+            break;
+    }
+    return _dateFormatter;
 }
 
 - (NSArray <NSString *>*)ignoreLocalIDs
@@ -505,179 +600,97 @@
         return;
     }
     
+    self.fetchResult = [changesDetails fetchResultAfterChanges];
+    PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
+    });
+    return;
+    /*
     if (![changesDetails hasIncrementalChanges] || [changesDetails hasMoves]) {
-        _fetchResult = [changesDetails fetchResultAfterChanges];
+        self.fetchResult = [changesDetails fetchResultAfterChanges];
     } else {
 
-        NSCalendar *calendar = [NSCalendar currentCalendar];
         PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
         
         // remove
         NSArray <PHAsset *>*removedObjects = [changesDetails removedObjects];
+        NSLog(@"remove %@", removedObjects);
         if (removedObjects.count > 0) {
-          
-            __block NSInteger previousYear = 0;
-            __block NSInteger previousMonth = 0;
-            __block NSInteger previousDay = 0;
-            
-            __block PHFetchedResultsSectionInfo *sectionInfo = nil;
-            
-            [removedObjects enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
-                
-                NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay
-                                                              fromDate:asset.creationDate];
-                NSInteger year = [dateComponets year];
-                NSInteger month = [dateComponets month];
-                NSInteger day = [dateComponets day];
-                
-                __block BOOL isYear = previousYear == year;
-                __block BOOL isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES);
-                __block BOOL isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES);
-                __block BOOL sectionExist = isYear && isMonth && isDay ;
-                
-                if (sectionExist) {
-                    
+            [self findSectionInfoInAssets:removedObjects exists:^(PHFetchedResultsSectionInfo *sectionInfo) {                
+                if ([_mySections containsObject:sectionInfo]) {
                     sectionInfo.numberOfObjects --;
-                    
-                } else {
-                    
-                    [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                        
-                        isYear = obj.year == year;
-                        isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? obj.month == month : YES);
-                        isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? obj.day == day : YES);
-                        
-                        if (isYear && isMonth && isDay) {
-                            sectionExist = YES;
-                            sectionInfo = obj;
-                            sectionInfo.numberOfObjects --;
-                            
-                            previousYear = year;
-                            previousMonth = month;
-                            previousDay = day;
-                            [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-                            *stop = YES;
-                        }
-                    }];
+                    if (sectionInfo.numberOfObjects == 0) {
+                        [sectionChangeDetails addRemovedIndex:[self indexForSectionInfo:sectionInfo]];
+                        [sectionChangeDetails removeUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
+                        [_mySections removeObject:sectionInfo];
+                        [sectionInfo removeCache];
+                    } else {
+                        [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
+                    }
                 }
+            } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
+                return nil;
+            } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
                 
-                if (sectionInfo.numberOfObjects == 0) {
-                    [sectionChangeDetails addRemovedIndex:[self indexForSectionInfo:sectionInfo]];
-                    [_mySections removeObject:sectionInfo];
-                }
             }];
         }
         
         // insert
         NSArray <PHAsset *>*insertedObjects = [changesDetails insertedObjects];
+        NSLog(@"insert %@", insertedObjects);
         if (insertedObjects.count > 0) {
-            
-            __block NSInteger previousYear = 0;
-            __block NSInteger previousMonth = 0;
-            __block NSInteger previousDay = 0;
-            
-            __block PHFetchedResultsSectionInfo *sectionInfo = nil;
-            
-            [insertedObjects enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
+            [self findSectionInfoInAssets:insertedObjects exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
                 
-                NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay
-                                                              fromDate:asset.creationDate];
-                NSInteger year = [dateComponets year];
-                NSInteger month = [dateComponets month];
-                NSInteger day = [dateComponets day];
+                sectionInfo.numberOfObjects ++;
                 
-                __block BOOL isYear = previousYear == year;
-                __block BOOL isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES);
-                __block BOOL isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES);
-                __block BOOL sectionExist = isYear && isMonth && isDay ;
+            } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
                 
-                if (sectionExist) {
-                    
-                    sectionInfo.numberOfObjects ++;
-                    
-                } else {
-                    
-                    [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                        
-                        isYear = obj.year == year;
-                        isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? obj.month == month : YES);
-                        isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? obj.day == day : YES);
-                        
-                        if (isYear && isMonth && isDay) {
-                            sectionExist = YES;
-                            sectionInfo = obj;
-                            [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-                            *stop = YES;
-                        }
-                    }];
-                    
-                    if (!sectionExist) {
-                        PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
-                        info.delegate = self;
-                        [_mySections addObject:info];
-                        
-                        previousYear = year;
-                        previousMonth = month;
-                        previousDay = day;
-                        sectionInfo = info;
-                        [sectionChangeDetails addInsertedIndex:[self indexForSectionInfo:sectionInfo]];
-                    }
-                    
-                }
+                PHFetchedResultsSectionInfo *sectionInfo = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
+                sectionInfo.delegate = self;
+                [_mySections addObject:sectionInfo];
+                _mySections = [self sortSessions];
+                [sectionChangeDetails addInsertedIndex:[self indexForSectionInfo:sectionInfo]];
+                return sectionInfo;
+                
+            } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
+                
             }];
         }
         
         // update
         NSArray <PHAsset *>*updatedObjects = [changesDetails changedObjects];
+        NSLog(@"update %@", updatedObjects);
+        
         if (updatedObjects.count > 0) {
-            __block NSInteger previousYear = 0;
-            __block NSInteger previousMonth = 0;
-            __block NSInteger previousDay = 0;
-            
-            __block PHFetchedResultsSectionInfo *sectionInfo = nil;
-            
-            [updatedObjects enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
+            [self findSectionInfoInAssets:updatedObjects exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+                [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
+                [sectionInfo removeCache];
+            } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
+                return nil;
+            } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
                 
-                NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay
-                                                              fromDate:asset.creationDate];
-                NSInteger year = [dateComponets year];
-                NSInteger month = [dateComponets month];
-                NSInteger day = [dateComponets day];
-                
-                __block BOOL isYear = previousYear == year;
-                __block BOOL isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES);
-                __block BOOL isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES);
-                __block BOOL sectionExist = isYear && isMonth && isDay ;
-                
-                if (!sectionExist) {
-                    
-                    [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                        
-                        isYear = obj.year == year;
-                        isMonth = (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? obj.month == month : YES);
-                        isDay = (self.sectionKey >= PHFetchedResultsSectionKeyDay ? obj.day == day : YES);
-                        
-                        if (isYear && isMonth && isDay) {
-                            sectionExist = YES;
-                            sectionInfo = obj;
-                            
-                            previousYear = year;
-                            previousMonth = month;
-                            previousDay = day;
-                            sectionInfo = obj;
-                            
-                            [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-                            *stop = YES;
-                        }
-                    }];
-                    
-                }
             }];
         }
+        
+
+        
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
         });
     }
+     */
+}
+
+- (NSMutableArray *)sortSessions
+{
+    NSSortDescriptor *year = [NSSortDescriptor sortDescriptorWithKey:@"self.year" ascending:NO];
+    NSSortDescriptor *month = [NSSortDescriptor sortDescriptorWithKey:@"self.month" ascending:NO];
+    NSSortDescriptor *week = [NSSortDescriptor sortDescriptorWithKey:@"self.week" ascending:NO];
+    NSSortDescriptor *day = [NSSortDescriptor sortDescriptorWithKey:@"self.day" ascending:NO];
+    NSSortDescriptor *hour = [NSSortDescriptor sortDescriptorWithKey:@"self.hour" ascending:NO];
+    
+    return (NSMutableArray *)[_mySections sortedArrayUsingDescriptors:@[year, month, week, day, hour]];
 }
 
 

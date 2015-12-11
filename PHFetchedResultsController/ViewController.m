@@ -71,7 +71,6 @@ static CGSize AssetGridThumbnailSize;
     [self updateCachedAssets];
 }
 
-
 - (PHFetchedResultsController *)fetchedResultsController
 {
     if (_fetchedResultsController) {
@@ -82,7 +81,7 @@ static CGSize AssetGridThumbnailSize;
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyMonth cacheName:nil];
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyHour cacheName:nil];
     _fetchedResultsController.delegate = self;
     return _fetchedResultsController;
 }
@@ -93,8 +92,10 @@ static CGSize AssetGridThumbnailSize;
         return _collectionView;
     }
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
-    layout.itemSize = CGSizeMake(80, 80);
-    layout.sectionInset = UIEdgeInsetsMake(10, 10, 10, 10);
+    layout.itemSize = CGSizeMake(90, 90);
+    layout.sectionInset = UIEdgeInsetsMake(2, 2, 2, 2);
+    layout.minimumInteritemSpacing = 2;
+    layout.minimumLineSpacing = 2;
     CGFloat scale = [UIScreen mainScreen].scale;
     AssetGridThumbnailSize = CGSizeMake(layout.itemSize.width * scale, layout.itemSize.height * scale);
     _collectionView = [[UICollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
@@ -112,21 +113,16 @@ static CGSize AssetGridThumbnailSize;
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
     id <PHFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][section];
-    
-    NSInteger i = [sectionInfo numberOfObjects];
-    
-    return i;
+    return [sectionInfo numberOfObjects];
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
 
     PHAsset *asset = [self.fetchedResultsController assetAtIndexPath:indexPath];
-    
-    
-    
     GridCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"GridCell" forIndexPath:indexPath];
     cell.representedAssetIdentifier = asset.localIdentifier;
+    cell.backgroundColor = [UIColor grayColor];
     
     if (asset.mediaSubtypes & PHAssetMediaSubtypePhotoLive) {
         UIImage *badge = [PHLivePhotoView livePhotoBadgeImageWithOptions:PHLivePhotoBadgeOptionsOverContent];
@@ -208,11 +204,11 @@ static CGSize AssetGridThumbnailSize;
         [self.imageManager startCachingImagesForAssets:assetsToStartCaching
                                             targetSize:AssetGridThumbnailSize
                                            contentMode:PHImageContentModeAspectFill
-                                               options:imageRequestOptions];
+                                               options:nil];
         [self.imageManager stopCachingImagesForAssets:assetsToStopCaching
                                            targetSize:AssetGridThumbnailSize
                                           contentMode:PHImageContentModeAspectFill
-                                              options:imageRequestOptions];
+                                              options:nil];
         
         // Store the preheat rect to compare against in the future.
         self.previousPreheatRect = preheatRect;
@@ -266,7 +262,10 @@ static CGSize AssetGridThumbnailSize;
 
 - (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails
 {
+
     
+    [self.collectionView reloadData];
+    return;
     [self.collectionView performBatchUpdates:^{
         [self.collectionView deleteSections:changeDetails.removedIndexes];
         [self.collectionView insertSections:changeDetails.insertedIndexes];
