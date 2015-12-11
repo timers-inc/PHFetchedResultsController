@@ -82,7 +82,7 @@ static CGSize AssetGridThumbnailSize;
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyDay cacheName:nil];
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyMonth cacheName:nil];
     _fetchedResultsController.delegate = self;
     return _fetchedResultsController;
 }
@@ -112,12 +112,18 @@ static CGSize AssetGridThumbnailSize;
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
     id <PHFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][section];
-    return [sectionInfo numberOfObjects];
+    
+    NSInteger i = [sectionInfo numberOfObjects];
+    
+    return i;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
+
     PHAsset *asset = [self.fetchedResultsController assetAtIndexPath:indexPath];
+    
+    
     
     GridCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"GridCell" forIndexPath:indexPath];
     cell.representedAssetIdentifier = asset.localIdentifier;
@@ -247,6 +253,7 @@ static CGSize AssetGridThumbnailSize;
 
 - (NSArray *)assetsAtIndexPaths:(NSArray *)indexPaths {
     if (indexPaths.count == 0) { return nil; }
+
     
     NSMutableArray *assets = [NSMutableArray arrayWithCapacity:indexPaths.count];
     for (NSIndexPath *indexPath in indexPaths) {
