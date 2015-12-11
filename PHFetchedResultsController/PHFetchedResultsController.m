@@ -331,7 +331,11 @@
     }];
     
     [self.mySections removeAllObjects];
-    
+    [self startCache];
+}
+
+- (void)startCache
+{
     [self findSectionInfoInAssets:(NSArray *)_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
         sectionInfo.numberOfObjects ++;
     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
@@ -346,7 +350,6 @@
             }];
         });
     }];
-    
 }
 
 - (void)findSectionInfoInAssets:(NSArray <PHAsset *>*)assets

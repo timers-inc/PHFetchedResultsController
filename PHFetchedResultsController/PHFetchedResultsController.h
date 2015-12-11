@@ -35,6 +35,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, weak) id <PHFetchedResultsControllerDelegate> delegate;
 
+- (void)startCache;
+
 /* Returns the fetched Asset at a given indexPath.
  */
 - (PHAsset *)assetAtIndexPath:(NSIndexPath *)indexPath;
