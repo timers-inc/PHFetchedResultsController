@@ -345,11 +345,20 @@
         return info;
     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-            [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                [obj objects];
-            }];
+            @synchronized(self) {
+                [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                    [obj objects];
+                }];
+            }
         });
     }];
+}
+
+- (NSMutableArray<PHFetchedResultsSectionInfo *> *)mySections
+{
+    @synchronized(self) {
+        return _mySections;
+    }
 }
 
 - (void)findSectionInfoInAssets:(NSArray <PHAsset *>*)assets
