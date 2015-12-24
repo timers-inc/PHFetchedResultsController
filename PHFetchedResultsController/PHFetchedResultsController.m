@@ -181,13 +181,16 @@
     }
 
     NSArray *ignoreLocalIDs = [self.delegate ignoreLocalIDs];
-    
+    NSPredicate *mediaTypePredicate = self.options.predicate;
+    NSPredicate *predicate = nil;
     if (ignoreLocalIDs.count) {
-        options.predicate = [NSPredicate predicateWithFormat:@"(creationDate >= %@) AND (creationDate < %@) AND (NOT (localIdentifier IN %@))", startDate, endDate, ignoreLocalIDs];
+        predicate = [NSPredicate predicateWithFormat:@"(creationDate >= %@) AND (creationDate < %@) AND (NOT (localIdentifier IN %@))", startDate, endDate, ignoreLocalIDs];
     } else {
-        options.predicate = [NSPredicate predicateWithFormat:@"(creationDate >= %@) AND (creationDate < %@)", startDate, endDate];
+        predicate = [NSPredicate predicateWithFormat:@"(creationDate >= %@) AND (creationDate < %@)", startDate, endDate];
     }
     
+    NSPredicate *newPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[mediaTypePredicate, predicate]];
+    options.predicate = newPredicate;
     PHFetchResult <PHAsset *>*result = [PHAsset fetchAssetsInAssetCollection:self.assetCollection options:options];
     [_cache setObject:result forKey:name];
     
@@ -299,19 +302,38 @@
 
 @implementation PHFetchedResultsController
 
-- (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection sectionKey:(PHFetchedResultsSectionKey)sectionKey cacheName:(nullable NSString *)name
+- (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection sectionKey:(PHFetchedResultsSectionKey)sectionKey mediaType:(PHFetchedResultsMediaType)mediaType
 {
     self = [super init];
     if (self) {
         
         _assetCollection = assetCollection;
         _sectionKey = sectionKey;
+        _mediaType = mediaType;
         
         _mySections = [NSMutableArray array];
         _options = [PHFetchOptions new];
+        
+        NSMutableArray *predicates = [NSMutableArray array];
+        
+        if ((mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
+            [predicates addObject:predicate];
+        }
+        if ((mediaType & PHFetchedResultsMediaTypeVideo) == PHFetchedResultsMediaTypeVideo) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
+            [predicates addObject:predicate];
+        }
+        if ((mediaType & PHFetchedResultsMediaTypeAudio) == PHFetchedResultsMediaTypeAudio) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
+            [predicates addObject:predicate];
+        }
+        
+        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:predicates];
         _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
         
         self.fetchResult = [PHAsset fetchAssetsInAssetCollection:assetCollection options:_options];
+
         [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
         
     }

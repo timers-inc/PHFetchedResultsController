@@ -19,6 +19,14 @@ typedef NS_ENUM(NSUInteger, PHFetchedResultsSectionKey) {
     PHFetchedResultsSectionKeyHour
 };
 
+typedef NS_OPTIONS(NSUInteger, PHFetchedResultsMediaType) {
+    PHFetchedResultsMediaTypeUnknown  = 1 << 0,
+    PHFetchedResultsMediaTypeImage  = 1 << 1,
+    PHFetchedResultsMediaTypeVideo = 1 << 2,
+    PHFetchedResultsMediaTypeAudio = 1 << 3,
+};
+
+
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol PHFetchedResultsSectionInfo;
@@ -26,10 +34,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PHFetchedResultsController : NSObject
 
-- (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection sectionKey:(PHFetchedResultsSectionKey)sectionKey cacheName:(nullable NSString *)name;
+- (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection sectionKey:(PHFetchedResultsSectionKey)sectionKey mediaType:(PHFetchedResultsMediaType)mediaType;
 
 @property (nonatomic, readonly) PHAssetCollection *assetCollection;
 @property (nonatomic, readonly) PHFetchedResultsSectionKey sectionKey;
+@property (nonatomic, readonly) PHFetchedResultsMediaType mediaType;
 @property (nullable, nonatomic, readonly) NSString *cacheName;
 @property (nullable, nonatomic, readonly) PHFetchResult <PHAsset *>*fetchedObjects;
 
