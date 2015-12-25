@@ -14,9 +14,9 @@
 		1293A8D51C0C53A70049912A /* PHFetchedResultsControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1293A8D41C0C53A70049912A /* PHFetchedResultsControllerTests.m */; };
 		1293A9291C0C553C0049912A /* NSIndexSet+Convenience.m in Sources */ = {isa = PBXBuildFile; fileRef = 1293A9221C0C553C0049912A /* NSIndexSet+Convenience.m */; };
 		1293A92A1C0C553C0049912A /* UICollectionView+Convenience.m in Sources */ = {isa = PBXBuildFile; fileRef = 1293A9241C0C553C0049912A /* UICollectionView+Convenience.m */; };
-		1293A92D1C0C567A0049912A /* PHFetchedResultsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1293A92C1C0C567A0049912A /* PHFetchedResultsController.m */; };
 		12A0B8BF1C0C577B00C4142D /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12A0B8BC1C0C577B00C4142D /* ViewController.m */; };
 		12A0B8C01C0C577B00C4142D /* GridCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 12A0B8BE1C0C577B00C4142D /* GridCell.m */; };
+		12C1F7861C2D28060068F418 /* PHFetchedResultsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12C1F7851C2D28060068F418 /* PHFetchedResultsController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,12 +44,12 @@
 		1293A9221C0C553C0049912A /* NSIndexSet+Convenience.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSIndexSet+Convenience.m"; sourceTree = "<group>"; };
 		1293A9231C0C553C0049912A /* UICollectionView+Convenience.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UICollectionView+Convenience.h"; sourceTree = "<group>"; };
 		1293A9241C0C553C0049912A /* UICollectionView+Convenience.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UICollectionView+Convenience.m"; sourceTree = "<group>"; };
-		1293A92B1C0C567A0049912A /* PHFetchedResultsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PHFetchedResultsController.h; sourceTree = "<group>"; };
-		1293A92C1C0C567A0049912A /* PHFetchedResultsController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PHFetchedResultsController.m; sourceTree = "<group>"; };
 		12A0B8BB1C0C577B00C4142D /* ViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		12A0B8BC1C0C577B00C4142D /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		12A0B8BD1C0C577B00C4142D /* GridCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridCell.h; sourceTree = "<group>"; };
 		12A0B8BE1C0C577B00C4142D /* GridCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GridCell.m; sourceTree = "<group>"; };
+		12C1F7841C2D28060068F418 /* PHFetchedResultsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PHFetchedResultsController.h; sourceTree = "<group>"; };
+		12C1F7851C2D28060068F418 /* PHFetchedResultsController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PHFetchedResultsController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,8 +101,8 @@
 				1293A9221C0C553C0049912A /* NSIndexSet+Convenience.m */,
 				1293A9231C0C553C0049912A /* UICollectionView+Convenience.h */,
 				1293A9241C0C553C0049912A /* UICollectionView+Convenience.m */,
-				1293A92B1C0C567A0049912A /* PHFetchedResultsController.h */,
-				1293A92C1C0C567A0049912A /* PHFetchedResultsController.m */,
+				12C1F7841C2D28060068F418 /* PHFetchedResultsController.h */,
+				12C1F7851C2D28060068F418 /* PHFetchedResultsController.m */,
 				1293A8C61C0C53A70049912A /* Assets.xcassets */,
 				1293A8C81C0C53A70049912A /* LaunchScreen.storyboard */,
 				1293A8CB1C0C53A70049912A /* Info.plist */,
@@ -228,7 +228,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				12A0B8BF1C0C577B00C4142D /* ViewController.m in Sources */,
-				1293A92D1C0C567A0049912A /* PHFetchedResultsController.m in Sources */,
+				12C1F7861C2D28060068F418 /* PHFetchedResultsController.m in Sources */,
 				1293A9291C0C553C0049912A /* NSIndexSet+Convenience.m in Sources */,
 				1293A8BF1C0C53A70049912A /* AppDelegate.m in Sources */,
 				12A0B8C01C0C577B00C4142D /* GridCell.m in Sources */,

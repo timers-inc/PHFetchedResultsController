@@ -34,7 +34,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PHFetchedResultsController : NSObject
 
-- (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection sectionKey:(PHFetchedResultsSectionKey)sectionKey mediaType:(PHFetchedResultsMediaType)mediaType;
+- (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection
+                             sectionKey:(PHFetchedResultsSectionKey)sectionKey
+                              mediaType:(PHFetchedResultsMediaType)mediaType
+                         ignoreLocalIDs:(NSArray <NSString *>*)ignoreLocalIDs;
 
 @property (nonatomic, readonly) PHAssetCollection *assetCollection;
 @property (nonatomic, readonly) PHFetchedResultsSectionKey sectionKey;
@@ -57,6 +60,9 @@ NS_ASSUME_NONNULL_BEGIN
  Only needed if a section index is used.
  */
 - (nullable NSString *)sectionIndexTitleForSectionName:(NSString *)sectionName;
+
+
+@property (nonatomic) NSArray <NSString *>*ignoreLocalIDs;
 
 @property (nonatomic, readonly) NSArray<NSString *> *sectionIndexTitles;
 
@@ -97,8 +103,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol PHFetchedResultsControllerDelegate <NSObject>
 
-@optional
-- (NSArray <NSString *>*)controllerIgnoreLocalIDs:(PHFetchedResultsController *)controller;
 @required
 - (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails;
 

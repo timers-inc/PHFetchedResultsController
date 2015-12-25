@@ -81,7 +81,7 @@ static CGSize AssetGridThumbnailSize;
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyWeek mediaType:PHFetchedResultsMediaTypeImage];
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyWeek mediaType:PHFetchedResultsMediaTypeImage ignoreLocalIDs:@[]];
     _fetchedResultsController.delegate = self;
     return _fetchedResultsController;
 }
@@ -128,6 +128,8 @@ static CGSize AssetGridThumbnailSize;
         UIImage *badge = [PHLivePhotoView livePhotoBadgeImageWithOptions:PHLivePhotoBadgeOptionsOverContent];
         cell.livePhotoBadgeImage = badge;
     }
+    
+    NSLog(@"%@", asset.localIdentifier);
     
     [self.imageManager requestImageForAsset:asset
                                  targetSize:AssetGridThumbnailSize
