@@ -288,7 +288,7 @@
 
 @property (nonatomic)   PHFetchOptions *options;
 @property (nonatomic)   PHFetchResult <PHAsset *>*fetchResult;
-@property (nonatomic)   NSMutableArray <PHFetchedResultsSectionInfo *>*mySections;
+@property (atomic)   NSMutableArray <PHFetchedResultsSectionInfo *>*mySections;
 @property (nonatomic)   NSDateFormatter *dateFormatter;
 
 @end
@@ -320,30 +320,34 @@
 
 - (void)setIgnoreLocalIDs:(NSArray<NSString *> *)ignoreLocalIDs
 {
-    _ignoreLocalIDs = ignoreLocalIDs;
-    _options = [PHFetchOptions new];
-    if (_ignoreLocalIDs) {
-        _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
+    @synchronized(self) {
+        _ignoreLocalIDs = ignoreLocalIDs;
+        _options = [PHFetchOptions new];
+        if (_ignoreLocalIDs) {
+            _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
+        }
+        [self fetch];
     }
-    [self fetch];
 }
 
 - (void)fetch
 {
-    if ((_mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
-        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+    @synchronized(self) {
+        if ((_mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
+            _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+        }
+        if ((_mediaType & PHFetchedResultsMediaTypeVideo) == PHFetchedResultsMediaTypeVideo) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
+            _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+        }
+        if ((_mediaType & PHFetchedResultsMediaTypeAudio) == PHFetchedResultsMediaTypeAudio) {
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
+            _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+        }
+        _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
+        self.fetchResult = [PHAsset fetchAssetsInAssetCollection:_assetCollection options:_options];
     }
-    if ((_mediaType & PHFetchedResultsMediaTypeVideo) == PHFetchedResultsMediaTypeVideo) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
-        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
-    }
-    if ((_mediaType & PHFetchedResultsMediaTypeAudio) == PHFetchedResultsMediaTypeAudio) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
-        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
-    }
-    _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
-    self.fetchResult = [PHAsset fetchAssetsInAssetCollection:_assetCollection options:_options];
 }
 
 - (void)setFetchResult:(PHFetchResult<PHAsset *> *)fetchResult
@@ -360,30 +364,26 @@
 
 - (void)startCache
 {
-    [self findSectionInfoInAssets:(NSArray *)_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
-        sectionInfo.numberOfObjects ++;
-    } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
-        PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
-        info.delegate = self;
-        [_mySections addObject:info];
-        return info;
-    } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-            @synchronized(self) {
-                [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                    [obj objects];
-                }];
-            }
-        });
-    }];
-}
-
-- (NSMutableArray<PHFetchedResultsSectionInfo *> *)mySections
-{
     @synchronized(self) {
-        return _mySections;
+        [self findSectionInfoInAssets:(NSArray *)_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+            sectionInfo.numberOfObjects ++;
+        } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
+            PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
+            info.delegate = self;
+            [self.mySections addObject:info];
+            return info;
+        } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                @synchronized(self) {
+                    [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                        [obj objects];
+                    }];
+                }
+            });
+        }];
     }
 }
+
 
 - (void)findSectionInfoInAssets:(NSArray <PHAsset *>*)assets
                          exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
@@ -425,7 +425,7 @@
                 
                 __block BOOL sectionExist = NO;
                 
-                [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
+                [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
                     if (aSectionInfo.year == year &&
                         (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
                         (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
@@ -461,7 +461,7 @@
     }];
     
     if (completionHandler) {
-        completionHandler(_mySections);
+        completionHandler(self.mySections);
     }
     
 }
@@ -496,7 +496,7 @@
     __block PHFetchedResultsSectionInfo *sectionInfo = nil;
     __block NSInteger section;
     
-    [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
+    [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
         if (aSectionInfo.year == year &&
             (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
             (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
@@ -519,7 +519,7 @@
 - (NSString *)sectionIndexTitleForSectionName:(NSString *)sectionName
 {
     __block NSString *sectionIndexTitle = nil;
-    [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+    [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if ([obj.name isEqualToString:sectionName]) {
             sectionIndexTitle = obj.indexTitle;
         }
@@ -535,7 +535,7 @@
 - (NSArray<NSString *> *)sectionIndexTitles
 {
     NSMutableArray *titles = [NSMutableArray array];
-    [_mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+    [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (obj.name) {
             [titles addObject:obj.name];
         }
@@ -545,7 +545,7 @@
 
 - (NSInteger)indexForSectionInfo:(PHFetchedResultsSectionInfo *)sectionInfo
 {
-    return [_mySections indexOfObject:sectionInfo];
+    return [self.mySections indexOfObject:sectionInfo];
 }
 
 #pragma mark - PHFetchedResultsSectionInfoDelegate
@@ -682,7 +682,7 @@
     NSSortDescriptor *day = [NSSortDescriptor sortDescriptorWithKey:@"self.day" ascending:NO];
     NSSortDescriptor *hour = [NSSortDescriptor sortDescriptorWithKey:@"self.hour" ascending:NO];
     
-    return (NSMutableArray *)[_mySections sortedArrayUsingDescriptors:@[year, month, week, day, hour]];
+    return (NSMutableArray *)[self.mySections sortedArrayUsingDescriptors:@[year, month, week, day, hour]];
 }
 
 
