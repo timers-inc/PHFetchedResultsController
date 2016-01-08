@@ -68,8 +68,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nullable, nonatomic, readonly) NSArray<id<PHFetchedResultsSectionInfo>> *sections;
 
+@property (nonatomic, copy) NSString *dateFormateForSectionTitle;
+
 
 - (NSInteger)sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)sectionIndex;
+
 
 @end
 
