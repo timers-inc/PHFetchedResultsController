@@ -84,6 +84,9 @@ static CGSize AssetGridThumbnailSize;
     _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyWeek mediaType:PHFetchedResultsMediaTypeImage ignoreLocalIDs:@[]];
     _fetchedResultsController.delegate = self;
     _fetchedResultsController.dateFormateForSectionTitle = @"yyyy.MM.DD";
+    
+    [_fetchedResultsController performFetch:nil];
+    
     return _fetchedResultsController;
 }
 
@@ -265,16 +268,7 @@ static CGSize AssetGridThumbnailSize;
 
 - (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails
 {
-
-    
     [self.collectionView reloadData];
-    return;
-    [self.collectionView performBatchUpdates:^{
-        [self.collectionView deleteSections:changeDetails.removedIndexes];
-        [self.collectionView insertSections:changeDetails.insertedIndexes];
-        [self.collectionView reloadSections:changeDetails.updatedIndexes];
-    } completion:nil];
-    
 }
 
 @end

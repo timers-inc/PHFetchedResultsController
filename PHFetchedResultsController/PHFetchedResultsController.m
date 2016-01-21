@@ -182,7 +182,12 @@
     
     NSPredicate *predicate = self.options.predicate;
     NSPredicate *datePredicate = [NSPredicate predicateWithFormat:@"(creationDate >= %@) AND (creationDate < %@)", startDate, endDate];
-    NSPredicate *newPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[predicate, datePredicate]];
+    NSPredicate *newPredicate;
+    if (predicate) {
+        newPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[predicate, datePredicate]];
+    } else {
+        newPredicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[datePredicate]];
+    }
     options.predicate = newPredicate;
     PHFetchResult <PHAsset *>*result = [PHAsset fetchAssetsInAssetCollection:self.assetCollection options:options];
     [_cache setObject:result forKey:name];
@@ -311,7 +316,6 @@
         if (ignoreLocalIDs) {
             _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
         }
-        [self fetch];
         [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
     }
     return self;
@@ -324,16 +328,20 @@
 - (void)setIgnoreLocalIDs:(NSArray<NSString *> *)ignoreLocalIDs
 {
     @synchronized(self) {
+        [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull sectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
+            [sectionInfo removeCache];
+        }];
+        [self.mySections removeAllObjects];
         _ignoreLocalIDs = ignoreLocalIDs;
         _options = [PHFetchOptions new];
         if (_ignoreLocalIDs) {
             _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
         }
-        [self fetch];
+        [self performFetch:nil];
     }
 }
 
-- (void)fetch
+- (BOOL)performFetch:(NSError * _Nullable __autoreleasing *)error
 {
     @synchronized(self) {
         if ((_mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
@@ -350,6 +358,7 @@
         }
         _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
         self.fetchResult = [PHAsset fetchAssetsInAssetCollection:_assetCollection options:_options];
+        return YES;
     }
 }
 
@@ -568,7 +577,7 @@
 
 - (NSDateFormatter *)dateFormatter
 {
-
+    
     switch (self.sectionInfoSectionKey) {
         case PHFetchedResultsSectionKeyHour:
             _dateFormatter.dateFormat = @"yyyy-MM-W-dd-HH";

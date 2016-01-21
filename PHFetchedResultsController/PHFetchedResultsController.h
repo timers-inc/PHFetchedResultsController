@@ -39,6 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
                               mediaType:(PHFetchedResultsMediaType)mediaType
                          ignoreLocalIDs:(NSArray <NSString *>*)ignoreLocalIDs;
 
+- (BOOL)performFetch:(NSError **)error;
+
 @property (nonatomic, readonly) PHAssetCollection *assetCollection;
 @property (nonatomic, readonly) PHFetchedResultsSectionKey sectionKey;
 @property (nonatomic, readonly) PHFetchedResultsMediaType mediaType;
