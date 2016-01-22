@@ -62,6 +62,7 @@ static CGSize AssetGridThumbnailSize;
     [super viewDidLoad];
     self.collectionView.backgroundColor = [UIColor whiteColor];
     [self.collectionView registerClass:[GridCell class] forCellWithReuseIdentifier:@"GridCell"];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Set ignore" style:UIBarButtonItemStylePlain target:self action:@selector(ignore:)];
     [self resetCachedAssets];
 
 }
@@ -69,6 +70,11 @@ static CGSize AssetGridThumbnailSize;
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [self updateCachedAssets];
+}
+
+- (void)ignore:(UIBarButtonItem *)barButtonItem
+{
+    [self.fetchedResultsController setIgnoreLocalIDs:@[]];
 }
 
 - (PHFetchedResultsController *)fetchedResultsController
