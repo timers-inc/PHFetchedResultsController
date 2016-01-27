@@ -293,7 +293,7 @@
 
 @property (nonatomic)   PHFetchOptions *options;
 @property (nonatomic)   PHFetchResult <PHAsset *>*fetchResult;
-@property (atomic)   NSMutableArray <PHFetchedResultsSectionInfo *>*mySections;
+@property (nonatomic)   NSMutableArray <PHFetchedResultsSectionInfo *>*mySections;
 
 @end
 
@@ -323,6 +323,13 @@
 
 - (void)dealloc {
     [[PHPhotoLibrary sharedPhotoLibrary] unregisterChangeObserver:self];
+}
+
+- (NSMutableArray<PHFetchedResultsSectionInfo *> *)mySections
+{
+    @synchronized(self) {
+        return _mySections;
+    }
 }
 
 - (void)setIgnoreLocalIDs:(NSArray<NSString *> *)ignoreLocalIDs
