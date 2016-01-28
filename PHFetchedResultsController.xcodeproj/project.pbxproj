@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		124F42BE1C5A24DA00E5D424 /* Header.m in Sources */ = {isa = PBXBuildFile; fileRef = 124F42BD1C5A24DA00E5D424 /* Header.m */; };
 		1293A8BC1C0C53A70049912A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1293A8BB1C0C53A70049912A /* main.m */; };
 		1293A8BF1C0C53A70049912A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1293A8BE1C0C53A70049912A /* AppDelegate.m */; };
 		1293A8C71C0C53A70049912A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1293A8C61C0C53A70049912A /* Assets.xcassets */; };
@@ -30,6 +31,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		124F42BC1C5A24DA00E5D424 /* Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Header.h; sourceTree = "<group>"; };
+		124F42BD1C5A24DA00E5D424 /* Header.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Header.m; sourceTree = "<group>"; };
 		1293A8B71C0C53A70049912A /* PHFetchedResultsController.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PHFetchedResultsController.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1293A8BB1C0C53A70049912A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1293A8BD1C0C53A70049912A /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -97,6 +100,8 @@
 				12A0B8BC1C0C577B00C4142D /* ViewController.m */,
 				12A0B8BD1C0C577B00C4142D /* GridCell.h */,
 				12A0B8BE1C0C577B00C4142D /* GridCell.m */,
+				124F42BC1C5A24DA00E5D424 /* Header.h */,
+				124F42BD1C5A24DA00E5D424 /* Header.m */,
 				1293A9211C0C553C0049912A /* NSIndexSet+Convenience.h */,
 				1293A9221C0C553C0049912A /* NSIndexSet+Convenience.m */,
 				1293A9231C0C553C0049912A /* UICollectionView+Convenience.h */,
@@ -232,6 +237,7 @@
 				12C1F7861C2D28060068F418 /* PHFetchedResultsController.m in Sources */,
 				1293A9291C0C553C0049912A /* NSIndexSet+Convenience.m in Sources */,
 				1293A8BF1C0C53A70049912A /* AppDelegate.m in Sources */,
+				124F42BE1C5A24DA00E5D424 /* Header.m in Sources */,
 				12A0B8C01C0C577B00C4142D /* GridCell.m in Sources */,
 				1293A92A1C0C553C0049912A /* UICollectionView+Convenience.m in Sources */,
 				1293A8BC1C0C53A70049912A /* main.m in Sources */,

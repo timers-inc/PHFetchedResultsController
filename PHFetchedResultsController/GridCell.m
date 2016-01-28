@@ -36,7 +36,7 @@
 {
     [super layoutSubviews];
     self.imageView.frame = self.bounds;
-    self.livePhotoBadgeImageView.frame = self.bounds;
+    self.livePhotoBadgeImageView.frame = CGRectMake(2, 2, 16, 16);
 }
 
 - (void)prepareForReuse {

@@ -11,6 +11,7 @@
 @interface ViewController () <PHFetchedResultsControllerDelegate>
 @property (nonatomic, strong) PHCachingImageManager *imageManager;
 @property CGRect previousPreheatRect;
+@property NSMutableArray *ignoreIDs;
 
 @end
 
@@ -60,8 +61,10 @@ static CGSize AssetGridThumbnailSize;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    _ignoreIDs = @[].mutableCopy;
     self.collectionView.backgroundColor = [UIColor whiteColor];
     [self.collectionView registerClass:[GridCell class] forCellWithReuseIdentifier:@"GridCell"];
+    [self.collectionView registerClass:[Header class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"Header"];
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Set ignore" style:UIBarButtonItemStylePlain target:self action:@selector(ignore:)];
     [self resetCachedAssets];
 
@@ -74,7 +77,9 @@ static CGSize AssetGridThumbnailSize;
 
 - (void)ignore:(UIBarButtonItem *)barButtonItem
 {
-    [self.fetchedResultsController setIgnoreLocalIDs:@[]];
+    PHAsset *asset = [self.fetchedResultsController fetchedObjects].firstObject;
+    [self.ignoreIDs addObject:asset.localIdentifier];
+    [self.fetchedResultsController setIgnoreLocalIDs:self.ignoreIDs];
 }
 
 - (PHFetchedResultsController *)fetchedResultsController
@@ -102,10 +107,14 @@ static CGSize AssetGridThumbnailSize;
         return _collectionView;
     }
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
-    layout.itemSize = CGSizeMake(90, 90);
-    layout.sectionInset = UIEdgeInsetsMake(2, 2, 2, 2);
+    layout.headerReferenceSize = CGSizeMake(self.view.bounds.size.width, 40);
+    layout.sectionInset = UIEdgeInsetsMake(2, 0, 2, 0);
     layout.minimumInteritemSpacing = 2;
     layout.minimumLineSpacing = 2;
+    NSInteger n = 4;
+    CGFloat width = (self.view.bounds.size.width - layout.sectionInset.left - layout.sectionInset.right - layout.minimumInteritemSpacing * (n - 1))/n;
+    layout.itemSize = CGSizeMake(width, width);
+    
     CGFloat scale = [UIScreen mainScreen].scale;
     AssetGridThumbnailSize = CGSizeMake(layout.itemSize.width * scale, layout.itemSize.height * scale);
     _collectionView = [[UICollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
@@ -117,7 +126,6 @@ static CGSize AssetGridThumbnailSize;
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
 {
-    NSLog(@"%s", __FUNCTION__);
     return self.fetchedResultsController.sections.count;
 }
 
@@ -125,6 +133,14 @@ static CGSize AssetGridThumbnailSize;
 {
     id <PHFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][section];
     return [sectionInfo numberOfObjects];
+}
+
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    Header *header = [collectionView dequeueReusableSupplementaryViewOfKind:kind withReuseIdentifier:@"Header" forIndexPath:indexPath];
+    id <PHFetchedResultsSectionInfo> sectionInfo = [[self.fetchedResultsController sections] objectAtIndex:indexPath.section];
+    header.title = [sectionInfo name];
+    return header;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
@@ -139,8 +155,6 @@ static CGSize AssetGridThumbnailSize;
         UIImage *badge = [PHLivePhotoView livePhotoBadgeImageWithOptions:PHLivePhotoBadgeOptionsOverContent];
         cell.livePhotoBadgeImage = badge;
     }
-    //id <PHFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][indexPath.section];
-    //NSLog(@"%@", [sectionInfo name]);
     
     [self.imageManager requestImageForAsset:asset
                                  targetSize:AssetGridThumbnailSize

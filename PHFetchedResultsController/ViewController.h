@@ -10,6 +10,7 @@
 #import "NSIndexSet+Convenience.h"
 #import "UICollectionView+Convenience.h"
 #import "GridCell.h"
+#import "Header.h"
 #import "PHFetchedResultsController.h"
 
 @import Photos;
