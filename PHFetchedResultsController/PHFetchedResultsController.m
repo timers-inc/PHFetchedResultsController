@@ -596,87 +596,11 @@
     if (changesDetails == nil) {
         return;
     }
-    
     self.fetchResult = [changesDetails fetchResultAfterChanges];
     PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
     });
-    return;
-    /*
-     if (![changesDetails hasIncrementalChanges] || [changesDetails hasMoves]) {
-     self.fetchResult = [changesDetails fetchResultAfterChanges];
-     } else {
-     
-     PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
-     
-     // remove
-     NSArray <PHAsset *>*removedObjects = [changesDetails removedObjects];
-     NSLog(@"remove %@", removedObjects);
-     if (removedObjects.count > 0) {
-     [self findSectionInfoInAssets:removedObjects exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
-     if ([_mySections containsObject:sectionInfo]) {
-     sectionInfo.numberOfObjects --;
-     if (sectionInfo.numberOfObjects == 0) {
-     [sectionChangeDetails addRemovedIndex:[self indexForSectionInfo:sectionInfo]];
-     [sectionChangeDetails removeUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-     [_mySections removeObject:sectionInfo];
-     [sectionInfo removeCache];
-     } else {
-     [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-     }
-     }
-     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
-     return nil;
-     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-     
-     }];
-     }
-     
-     // insert
-     NSArray <PHAsset *>*insertedObjects = [changesDetails insertedObjects];
-     NSLog(@"insert %@", insertedObjects);
-     if (insertedObjects.count > 0) {
-     [self findSectionInfoInAssets:insertedObjects exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
-     
-     sectionInfo.numberOfObjects ++;
-     
-     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
-     
-     PHFetchedResultsSectionInfo *sectionInfo = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
-     sectionInfo.delegate = self;
-     [_mySections addObject:sectionInfo];
-     _mySections = [self sortSessions];
-     [sectionChangeDetails addInsertedIndex:[self indexForSectionInfo:sectionInfo]];
-     return sectionInfo;
-     
-     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-     
-     }];
-     }
-     
-     // update
-     NSArray <PHAsset *>*updatedObjects = [changesDetails changedObjects];
-     NSLog(@"update %@", updatedObjects);
-     
-     if (updatedObjects.count > 0) {
-     [self findSectionInfoInAssets:updatedObjects exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
-     [sectionChangeDetails addUpdatedIndex:[self indexForSectionInfo:sectionInfo]];
-     [sectionInfo removeCache];
-     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset) {
-     return nil;
-     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-     
-     }];
-     }
-     
-     
-     
-     dispatch_async(dispatch_get_main_queue(), ^{
-     [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
-     });
-     }
-     */
 }
 
 - (NSMutableArray *)sortSessions
