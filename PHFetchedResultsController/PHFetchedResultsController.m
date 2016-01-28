@@ -592,7 +592,6 @@
 
 - (void)photoLibraryDidChange:(PHChange *)changeInstance
 {
-    NSLog(@"%s", __FUNCTION__);
     PHFetchResultChangeDetails *changesDetails = [changeInstance changeDetailsForFetchResult:self.fetchResult];
     if (changesDetails == nil) {
         return;
