@@ -16,6 +16,14 @@ A fetchedResultsController for PhotoKit. It can be divided into sections by date
     return [sectionInfo numberOfObjects];
 }
 
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    Header *header = [collectionView dequeueReusableSupplementaryViewOfKind:kind withReuseIdentifier:@"Header" forIndexPath:indexPath];
+    id <PHFetchedResultsSectionInfo> sectionInfo = [[self.fetchedResultsController sections] objectAtIndex:indexPath.section];
+    header.title = [sectionInfo name];
+    return header;
+}
+
 
 ```
 
@@ -27,13 +35,16 @@ A fetchedResultsController for PhotoKit. It can be divided into sections by date
     if (_fetchedResultsController) {
         return _fetchedResultsController;
     }
-    
     PHFetchResult *assetCollections = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
                                                                                subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary
                                                                                options:nil];
     PHAssetCollection *assetCollection = assetCollections.firstObject;
     
-    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyDay cacheName:nil];
+    _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyWeek mediaType:PHFetchedResultsMediaTypeImage ignoreLocalIDs:@[]];
+    _fetchedResultsController.delegate = self;
+    _fetchedResultsController.dateFormateForSectionTitle = @"yyyy.MM.DD";
+    
+    [_fetchedResultsController performFetch:nil];
     
     return _fetchedResultsController;
 }
