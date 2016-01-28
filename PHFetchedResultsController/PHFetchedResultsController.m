@@ -332,6 +332,10 @@
         _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
     }
     [self performFetch:nil];
+    PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
+    });
 }
 
 - (BOOL)performFetch:(NSError * _Nullable __autoreleasing *)error
@@ -384,7 +388,7 @@
                       notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset, NSMutableArray <PHFetchedResultsSectionInfo *>*sections))notExistsBlock
                      completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
 {
-
+    
     NSCalendar *calendar = [NSCalendar currentCalendar];
     NSMutableArray *sections = [NSMutableArray array];
     
@@ -397,7 +401,7 @@
     __block PHFetchedResultsSectionInfo *sectionInfo = nil;
     
     [assets enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
-
+        
         @autoreleasepool {
             NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:asset.creationDate];
             
@@ -459,7 +463,7 @@
     if (completionHandler) {
         completionHandler(sections);
     }
-
+    
 }
 
 - (NSArray<id<PHFetchedResultsSectionInfo>> *)sections
