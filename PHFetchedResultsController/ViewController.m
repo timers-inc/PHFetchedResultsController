@@ -117,6 +117,7 @@ static CGSize AssetGridThumbnailSize;
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
 {
+    NSLog(@"%s", __FUNCTION__);
     return self.fetchedResultsController.sections.count;
 }
 
@@ -138,8 +139,8 @@ static CGSize AssetGridThumbnailSize;
         UIImage *badge = [PHLivePhotoView livePhotoBadgeImageWithOptions:PHLivePhotoBadgeOptionsOverContent];
         cell.livePhotoBadgeImage = badge;
     }
-    id <PHFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][indexPath.section];
-    NSLog(@"%@", [sectionInfo name]);
+    //id <PHFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][indexPath.section];
+    //NSLog(@"%@", [sectionInfo name]);
     
     [self.imageManager requestImageForAsset:asset
                                  targetSize:AssetGridThumbnailSize
