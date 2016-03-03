@@ -289,7 +289,7 @@
 
 @end
 
-@interface PHFetchedResultsController () <PHFetchedResultsSectionInfoDelegate>
+@interface PHFetchedResultsController () <PHFetchedResultsSectionInfoDelegate, PHPhotoLibraryChangeObserver>
 
 @property (nonatomic)   PHFetchOptions *options;
 @property (nonatomic)   PHFetchResult <PHAsset *>*fetchResult;
@@ -601,9 +601,8 @@
         return;
     }
     self.fetchResult = [changesDetails fetchResultAfterChanges];
-    PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
+        [self.delegate controller:self photoLibraryDidChange:changeInstance];
     });
 }
 

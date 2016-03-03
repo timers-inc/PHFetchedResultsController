@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol PHFetchedResultsSectionInfo;
 @protocol PHFetchedResultsControllerDelegate;
 
-@interface PHFetchedResultsController : NSObject <PHPhotoLibraryChangeObserver>
+@interface PHFetchedResultsController : NSObject
 
 - (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection
                              sectionKey:(PHFetchedResultsSectionKey)sectionKey
@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol PHFetchedResultsControllerDelegate <NSObject>
 
 @required
-- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails;
+- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHChange *)changeInstance;
 
 @end
 
