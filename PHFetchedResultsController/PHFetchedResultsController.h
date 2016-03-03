@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol PHFetchedResultsControllerDelegate <NSObject>
 
 @required
-- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHChange *)changeInstance;
+- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchResultChangeDetails *)changesDetails;
 
 @end
 
