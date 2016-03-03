@@ -331,10 +331,11 @@
     if (_ignoreLocalIDs) {
         _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
     }
+    PHFetchResult<PHAsset *> *fetcheResult = self.fetchResult;
     [self performFetch:nil];
-    PHFetchedResultsSectionChangeDetails *sectionChangeDetails = [PHFetchedResultsSectionChangeDetails new];
+    PHFetchResultChangeDetails *fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:fetcheResult toFetchResult:self.fetchResult changedObjects:@[]];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate controller:self photoLibraryDidChange:sectionChangeDetails];
+        [self.delegate controller:self photoLibraryDidChange:fetchResultChangeDetails];
     });
 }
 
@@ -602,10 +603,9 @@
     }
     self.fetchResult = [changesDetails fetchResultAfterChanges];
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate controller:self photoLibraryDidChange:changeInstance];
+        [self.delegate controller:self photoLibraryDidChange:changesDetails];
     });
 }
-
 - (NSMutableArray *)sortSessions
 {
     NSSortDescriptor *year = [NSSortDescriptor sortDescriptorWithKey:@"self.year" ascending:NO];
