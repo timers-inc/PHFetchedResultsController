@@ -289,7 +289,7 @@
 
 @end
 
-@interface PHFetchedResultsController () <PHFetchedResultsSectionInfoDelegate, PHPhotoLibraryChangeObserver>
+@interface PHFetchedResultsController () <PHFetchedResultsSectionInfoDelegate>
 
 @property (nonatomic)   PHFetchOptions *options;
 @property (nonatomic)   PHFetchResult <PHAsset *>*fetchResult;
