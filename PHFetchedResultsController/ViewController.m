@@ -145,7 +145,6 @@ static CGSize AssetGridThumbnailSize;
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
-
     PHAsset *asset = [self.fetchedResultsController assetAtIndexPath:indexPath];
     GridCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"GridCell" forIndexPath:indexPath];
     cell.representedAssetIdentifier = asset.localIdentifier;
@@ -173,9 +172,10 @@ static CGSize AssetGridThumbnailSize;
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    [self.collectionView performBatchUpdates:^{
-        [self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section]];
-    } completion:nil];
+    [self resetCachedAssets];
+    PHAsset *asset = [self.fetchedResultsController assetAtIndexPath:indexPath];
+    [self.ignoreIDs addObject:asset.localIdentifier];
+    self.fetchedResultsController.ignoreLocalIDs = self.ignoreIDs;
 }
 
 #pragma mark - 
@@ -276,8 +276,6 @@ static CGSize AssetGridThumbnailSize;
 
 - (NSArray *)assetsAtIndexPaths:(NSArray *)indexPaths {
     if (indexPaths.count == 0) { return nil; }
-
-    
     NSMutableArray *assets = [NSMutableArray arrayWithCapacity:indexPaths.count];
     for (NSIndexPath *indexPath in indexPaths) {
         PHAsset *asset = [self.fetchedResultsController assetAtIndexPath:indexPath];
@@ -287,7 +285,7 @@ static CGSize AssetGridThumbnailSize;
     return assets;
 }
 
-- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchedResultsSectionChangeDetails *)changeDetails
+- (void)controller:(PHFetchedResultsController *)controller photoLibraryDidChange:(PHFetchResultChangeDetails *)changesDetails
 {
     [self.collectionView reloadData];
 }

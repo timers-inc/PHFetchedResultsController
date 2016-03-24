@@ -289,6 +289,33 @@
 
 @end
 
+@interface _PHFetchTask : NSObject
+
+@property (readonly) NSUInteger taskIdentifier;
+@property (nonatomic, readonly) BOOL isCanceled;
+
+- (void)cancel;
+
+@end
+
+@implementation _PHFetchTask
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _isCanceled = NO;
+    }
+    return self;
+}
+
+- (void)cancel
+{
+    _isCanceled = YES;
+}
+
+@end
+
 @interface PHFetchedResultsController () <PHFetchedResultsSectionInfoDelegate, PHPhotoLibraryChangeObserver>
 
 @property (nonatomic)   PHFetchOptions *options;
@@ -300,12 +327,17 @@
 @implementation PHFetchedResultsController
 {
     NSDateFormatter *_dateFormatter;
+    dispatch_queue_t _queue;
+    _PHFetchTask *_runningTask;
 }
 
 - (instancetype)initWithAssetCollection:(PHAssetCollection *)assetCollection sectionKey:(PHFetchedResultsSectionKey)sectionKey mediaType:(PHFetchedResultsMediaType)mediaType ignoreLocalIDs:(NSArray <NSString *>*)ignoreLocalIDs
 {
     self = [super init];
     if (self) {
+        
+        _queue = dispatch_queue_create("phfetchedresultscontroller.queue", DISPATCH_QUEUE_SERIAL);
+        
         _dateFormatter = [NSDateFormatter new];
         _assetCollection = assetCollection;
         _sectionKey = sectionKey;
@@ -331,12 +363,7 @@
     if (_ignoreLocalIDs) {
         _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
     }
-    PHFetchResult<PHAsset *> *fetcheResult = self.fetchResult;
     [self performFetch:nil];
-    PHFetchResultChangeDetails *fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:fetcheResult toFetchResult:self.fetchResult changedObjects:@[]];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate controller:self photoLibraryDidChange:fetchResultChangeDetails];
-    });
 }
 
 - (BOOL)performFetch:(NSError * _Nullable __autoreleasing *)error
@@ -358,41 +385,76 @@
     return YES;
 }
 
+- (PHFetchOptions *)alterOptions:(PHFetchOptions *)options
+{
+    PHFetchOptions *fetchOptions = [PHFetchOptions new];
+    if ((_mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
+        fetchOptions.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[options.predicate, predicate]];
+    }
+    if ((_mediaType & PHFetchedResultsMediaTypeVideo) == PHFetchedResultsMediaTypeVideo) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
+        fetchOptions.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[options.predicate, predicate]];
+    }
+    if ((_mediaType & PHFetchedResultsMediaTypeAudio) == PHFetchedResultsMediaTypeAudio) {
+        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
+        fetchOptions.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[options.predicate, predicate]];
+    }
+    fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
+    return fetchOptions;
+}
+
 - (void)setFetchResult:(PHFetchResult<PHAsset *> *)fetchResult
 {
+    __block PHFetchResult<PHAsset *> *previousFetchResult = _fetchResult;
     _fetchResult = fetchResult;
     
     [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull sectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
         [sectionInfo removeCache];
     }];
     
-    [self findSectionInfoInAssets:(NSArray *)_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+    // 処理中のタスクがあればキャンセル
+    if (_runningTask) {
+        NSLog(@"cancel");
+        [_runningTask cancel];
+    }
+    
+    __weak typeof(self) __self = self;
+
+    _runningTask = [self findSectionInfoInAssets:_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
         sectionInfo.numberOfObjects ++;
     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray *sections) {
         PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
-        info.delegate = self;
+        info.delegate = __self;
         [sections addObject:info];
         return info;
     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-        _mySections = [NSArray arrayWithArray:sections];
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-            [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                [obj objects];
-            }];
-        });
+//        _mySections = [NSArray arrayWithArray:sections];
+//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+//            [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+//                [obj objects];
+//            }];
+//        });
+        @synchronized (self) {
+            _mySections = [NSArray arrayWithArray:sections];
+            _runningTask = nil;
+            PHFetchResultChangeDetails *fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:previousFetchResult toFetchResult:fetchResult changedObjects:@[]];
+            [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
+        }
     }];
     
 }
 
-- (void)findSectionInfoInAssets:(NSArray <PHAsset *>*)assets
+- (_PHFetchTask *)findSectionInfoInAssets:(PHFetchResult<PHAsset *> *)assets
                          exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
                       notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset, NSMutableArray <PHFetchedResultsSectionInfo *>*sections))notExistsBlock
                      completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
 {
+    _PHFetchTask *task = [_PHFetchTask new];
     
-    NSCalendar *calendar = [NSCalendar currentCalendar];
     NSMutableArray *sections = [NSMutableArray array];
     
+    __block NSCalendar *calendar = [NSCalendar currentCalendar];
     __block NSInteger previousYear = 0;
     __block NSInteger previousMonth = 0;
     __block NSInteger previousWeek = 0;
@@ -400,45 +462,27 @@
     __block NSInteger previousHour = 0;
     
     __block PHFetchedResultsSectionInfo *sectionInfo = nil;
+    __block PHFetchedResultsSectionKey sectionKey = self.sectionKey;
     
-    [assets enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
-        
-        @autoreleasepool {
-            NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:asset.creationDate];
+    dispatch_async(_queue, ^{
+        [assets enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
             
-            NSInteger year = [dateComponets year];
-            NSInteger month = [dateComponets month];
-            NSInteger week = [dateComponets weekOfMonth];
-            NSInteger day = [dateComponets day];
-            NSInteger hour = [dateComponets hour];
+            if (task.isCanceled) { *stop = YES; }
             
-            if (previousYear == year &&
-                (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES) &&
-                (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? previousWeek == week : YES) &&
-                (self.sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES) &&
-                (self.sectionKey >= PHFetchedResultsSectionKeyHour ? previousHour == hour : YES)) {
+            @autoreleasepool {
+                NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:asset.creationDate];
                 
-                if (existsBlock) {
-                    existsBlock(sectionInfo);
-                }
+                NSInteger year = [dateComponets year];
+                NSInteger month = [dateComponets month];
+                NSInteger week = [dateComponets weekOfMonth];
+                NSInteger day = [dateComponets day];
+                NSInteger hour = [dateComponets hour];
                 
-            } else {
-                
-                __block BOOL sectionExist = NO;
-                
-                [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
-                    if (aSectionInfo.year == year &&
-                        (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
-                        (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
-                        (self.sectionKey >= PHFetchedResultsSectionKeyDay ? aSectionInfo.day == day : YES) &&
-                        (self.sectionKey >= PHFetchedResultsSectionKeyHour ? aSectionInfo.hour == hour : YES)) {
-                        sectionExist = YES;
-                        sectionInfo = aSectionInfo;
-                        *stop = YES;
-                    }
-                }];
-                
-                if (sectionExist) {
+                if (previousYear == year &&
+                    (sectionKey >= PHFetchedResultsSectionKeyMonth ? previousMonth == month : YES) &&
+                    (sectionKey >= PHFetchedResultsSectionKeyWeek ? previousWeek == week : YES) &&
+                    (sectionKey >= PHFetchedResultsSectionKeyDay ? previousDay == day : YES) &&
+                    (sectionKey >= PHFetchedResultsSectionKeyHour ? previousHour == hour : YES)) {
                     
                     if (existsBlock) {
                         existsBlock(sectionInfo);
@@ -446,25 +490,59 @@
                     
                 } else {
                     
-                    if (notExistsBlock) {
-                        sectionInfo = notExistsBlock(asset, sections);
+                    if (task.isCanceled) { *stop = YES; }
+                    
+                    __block BOOL sectionExist = NO;
+                    
+                    [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
+                        if (task.isCanceled) { *stop = YES; }
+                        if (aSectionInfo.year == year &&
+                            (sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
+                            (sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
+                            (sectionKey >= PHFetchedResultsSectionKeyDay ? aSectionInfo.day == day : YES) &&
+                            (sectionKey >= PHFetchedResultsSectionKeyHour ? aSectionInfo.hour == hour : YES)) {
+                            sectionExist = YES;
+                            sectionInfo = aSectionInfo;
+                            *stop = YES;
+                        }
+                    }];
+                    
+                    if (task.isCanceled) { *stop = YES; }
+                    
+                    if (sectionExist) {
+                        
+                        if (existsBlock) {
+                            existsBlock(sectionInfo);
+                        }
+                        
+                    } else {
+                        
+                        if (notExistsBlock) {
+                            sectionInfo = notExistsBlock(asset, sections);
+                        }
+                        
+                        previousYear = year;
+                        previousMonth = month;
+                        previousWeek = week;
+                        previousDay = day;
+                        previousHour = hour;
+                        
                     }
-                    
-                    previousYear = year;
-                    previousMonth = month;
-                    previousWeek = week;
-                    previousDay = day;
-                    previousHour = hour;
-                    
                 }
             }
+        }];
+        
+        if (!task.isCanceled) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completionHandler) {
+                    completionHandler(sections);
+                }
+            });
         }
-    }];
+        
+    });
     
-    if (completionHandler) {
-        completionHandler(sections);
-    }
-    
+    return task;
 }
 
 - (NSArray<id<PHFetchedResultsSectionInfo>> *)sections
@@ -496,13 +574,14 @@
     
     __block PHFetchedResultsSectionInfo *sectionInfo = nil;
     __block NSInteger section;
+    __block PHFetchedResultsSectionKey sectionKey = self.sectionKey;
     
     [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull aSectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
         if (aSectionInfo.year == year &&
-            (self.sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
-            (self.sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
-            (self.sectionKey >= PHFetchedResultsSectionKeyDay ? aSectionInfo.day == day : YES) &&
-            (self.sectionKey >= PHFetchedResultsSectionKeyHour ? aSectionInfo.hour == hour : YES)) {
+            (sectionKey >= PHFetchedResultsSectionKeyMonth ? aSectionInfo.month == month : YES) &&
+            (sectionKey >= PHFetchedResultsSectionKeyWeek ? aSectionInfo.week == week : YES) &&
+            (sectionKey >= PHFetchedResultsSectionKeyDay ? aSectionInfo.day == day : YES) &&
+            (sectionKey >= PHFetchedResultsSectionKeyHour ? aSectionInfo.hour == hour : YES)) {
             section = idx;
             sectionInfo = aSectionInfo;
             *stop = YES;
