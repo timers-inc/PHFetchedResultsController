@@ -11,6 +11,7 @@
 @protocol PHFetchedResultsSectionInfoDelegate <NSObject>
 
 - (PHFetchedResultsSectionKey)sectionInfoSectionKey;
+- (NSCache *)cacheForSectionInfo;
 - (NSDateFormatter *)dateFormatter;
 - (NSArray <NSString *>*)ignoreLocalIDs;
 
@@ -38,7 +39,6 @@
 
 @implementation PHFetchedResultsSectionInfo
 {
-    NSCache *_cache;
     NSUInteger _numberOfObjects;
 }
 
@@ -48,7 +48,6 @@
 {
     self = [super init];
     if (self) {
-        _cache = [NSCache new];
         NSCalendar *calendar = [NSCalendar currentCalendar];
         _dateComponents = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:date];
         _assetCollection = assetCollection;
@@ -102,6 +101,11 @@
     return _name;
 }
 
+- (NSCache *)cache
+{
+    return [self.delegate cacheForSectionInfo];
+}
+
 - (NSString *)indexTitle
 {
     return nil;
@@ -115,7 +119,8 @@
 - (PHFetchResult <PHAsset *>*)objects
 {
     NSString *name = [self name];
-    PHFetchResult *cacheResult = [_cache objectForKey:name];
+    NSCache *cache = [self cache];
+    PHFetchResult *cacheResult = [cache objectForKey:name];
     if (cacheResult) {
         return cacheResult;
     }
@@ -190,21 +195,28 @@
     }
     options.predicate = newPredicate;
     PHFetchResult <PHAsset *>*result = [PHAsset fetchAssetsInAssetCollection:self.assetCollection options:options];
-    [_cache setObject:result forKey:name];
+    [cache setObject:result forKey:name];
     
     return result;
 }
 
 - (PHAsset *)assetAtIndex:(NSInteger)index
 {
-    PHAsset *asset = self.objects[index];
-    return asset;
+    NSInteger count = self.objects.count;
+    if (count) {
+        if ((self.objects.count - 1) < index) {
+            return nil;
+        }
+        PHAsset *asset = self.objects[index];
+        return asset;
+    }
+    return nil;
 }
 
 - (void)removeCache
 {
     NSString *name = [self name];
-    [_cache removeObjectForKey:name];
+    [[self cache] removeObjectForKey:name];
 }
 
 @end
@@ -326,6 +338,7 @@
 
 @implementation PHFetchedResultsController
 {
+    NSCache *_cache;
     NSDateFormatter *_dateFormatter;
     dispatch_queue_t _queue;
     _PHFetchTask *_runningTask;
@@ -336,6 +349,7 @@
     self = [super init];
     if (self) {
         
+        _cache = [NSCache new];
         _queue = dispatch_queue_create("phfetchedresultscontroller.queue", DISPATCH_QUEUE_SERIAL);
         
         _dateFormatter = [NSDateFormatter new];
@@ -406,22 +420,35 @@
 
 - (void)setFetchResult:(PHFetchResult<PHAsset *> *)fetchResult
 {
+    __weak typeof(self) __self = self;
     __block PHFetchResult<PHAsset *> *previousFetchResult = _fetchResult;
     _fetchResult = fetchResult;
     
-    [self.mySections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull sectionInfo, NSUInteger idx, BOOL * _Nonnull stop) {
-        [sectionInfo removeCache];
-    }];
-    
     // 処理中のタスクがあればキャンセル
     if (_runningTask) {
-        NSLog(@"cancel");
         [_runningTask cancel];
     }
     
-    __weak typeof(self) __self = self;
-
-    _runningTask = [self findSectionInfoInAssets:_fetchResult exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+    __block PHFetchResultChangeDetails *fetchResultChangeDetails;
+    if (previousFetchResult) {
+        fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:previousFetchResult toFetchResult:fetchResult changedObjects:@[]];
+        NSMutableArray *sections = _mySections.mutableCopy;
+        _runningTask = [self findSectionInfoInAssets:fetchResultChangeDetails.removedObjects sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+            [sectionInfo removeCache];
+            sectionInfo.numberOfObjects = sectionInfo.objects.count;
+        } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray<PHFetchedResultsSectionInfo *> *sections) {
+            return nil;
+        } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
+            _runningTask = nil;
+            [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
+        }];
+        
+        return;
+    }
+    
+    [_cache removeAllObjects];
+    NSMutableArray *sections = [NSMutableArray array];
+    _runningTask = [self findSectionInfoInAssets:(NSArray *)_fetchResult sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
         sectionInfo.numberOfObjects ++;
     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray *sections) {
         PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
@@ -429,30 +456,28 @@
         [sections addObject:info];
         return info;
     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-//        _mySections = [NSArray arrayWithArray:sections];
-//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-//            [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-//                [obj objects];
-//            }];
-//        });
         @synchronized (self) {
             _mySections = [NSArray arrayWithArray:sections];
             _runningTask = nil;
-            PHFetchResultChangeDetails *fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:previousFetchResult toFetchResult:fetchResult changedObjects:@[]];
             [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                    [obj objects];
+                }];
+            });
         }
     }];
-    
 }
 
-- (_PHFetchTask *)findSectionInfoInAssets:(PHFetchResult<PHAsset *> *)assets
+- (_PHFetchTask *)findSectionInfoInAssets:(NSArray<PHAsset *> *)assets
+                                 sections:(NSMutableArray *)sections
                          exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
                       notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset, NSMutableArray <PHFetchedResultsSectionInfo *>*sections))notExistsBlock
                      completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
 {
     _PHFetchTask *task = [_PHFetchTask new];
     
-    NSMutableArray *sections = [NSMutableArray array];
+//    NSMutableArray *sections = [NSMutableArray array];
     
     __block NSCalendar *calendar = [NSCalendar currentCalendar];
     __block NSInteger previousYear = 0;
@@ -539,7 +564,7 @@
                 }
             });
         }
-        
+
     });
     
     return task;
@@ -670,6 +695,11 @@
     }
     
     return _dateFormatter;
+}
+
+- (NSCache *)cacheForSectionInfo
+{
+    return _cache;
 }
 
 #pragma mark - PHPhotoLibraryChangeObserver

@@ -182,7 +182,14 @@ static CGSize AssetGridThumbnailSize;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     // Update cached assets for the new visible area.
-    [self updateCachedAssets];
+    
+    NSInteger contentOffsetY = (NSInteger)scrollView.contentOffset.y;
+    
+    if (contentOffsetY % 15 == 0) {
+        //NSLog(@"%d", contentOffsetY);
+        [self updateCachedAssets];
+    }
+
 }
 
 #pragma mark - Asset Caching
@@ -195,6 +202,7 @@ static CGSize AssetGridThumbnailSize;
 - (void)updateCachedAssets {
     BOOL isViewVisible = [self isViewLoaded] && [[self view] window] != nil;
     if (!isViewVisible) { return; }
+    
     
     // The preheat window is twice the height of the visible rect.
     CGRect preheatRect = self.collectionView.bounds;
@@ -231,11 +239,11 @@ static CGSize AssetGridThumbnailSize;
         [self.imageManager startCachingImagesForAssets:assetsToStartCaching
                                             targetSize:AssetGridThumbnailSize
                                            contentMode:PHImageContentModeAspectFill
-                                               options:nil];
+                                               options:imageRequestOptions];
         [self.imageManager stopCachingImagesForAssets:assetsToStopCaching
                                            targetSize:AssetGridThumbnailSize
                                           contentMode:PHImageContentModeAspectFill
-                                              options:nil];
+                                              options:imageRequestOptions];
         
         // Store the preheat rect to compare against in the future.
         self.previousPreheatRect = preheatRect;
