@@ -437,12 +437,16 @@
             [sectionInfo removeCache];
             sectionInfo.numberOfObjects = sectionInfo.objects.count;
         } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray<PHFetchedResultsSectionInfo *> *sections) {
-            return nil;
+            PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
+            info.delegate = __self;
+            return info;
         } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-            _runningTask = nil;
-            [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
+            @synchronized (self) {
+                _mySections = [NSArray arrayWithArray:sections];
+                _runningTask = nil;
+                [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
+            }
         }];
-        
         return;
     }
     
@@ -453,7 +457,6 @@
     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray *sections) {
         PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
         info.delegate = __self;
-        [sections addObject:info];
         return info;
     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
         @synchronized (self) {
@@ -511,6 +514,11 @@
                     
                     if (existsBlock) {
                         existsBlock(sectionInfo);
+                        if (sectionInfo.numberOfObjects == 0) {
+                            @synchronized (task) {
+                                [sections removeObject:sectionInfo];
+                            }
+                        }
                     }
                     
                 } else {
@@ -538,12 +546,22 @@
                         
                         if (existsBlock) {
                             existsBlock(sectionInfo);
+                            if (sectionInfo.numberOfObjects == 0) {
+                                @synchronized (task) {
+                                    [sections removeObject:sectionInfo];
+                                }
+                            }
                         }
                         
                     } else {
                         
                         if (notExistsBlock) {
                             sectionInfo = notExistsBlock(asset, sections);
+                            if (sectionInfo) {
+                                @synchronized (task) {
+                                    [sections addObject:sectionInfo];
+                                }
+                            }
                         }
                         
                         previousYear = year;
