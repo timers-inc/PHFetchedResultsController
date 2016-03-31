@@ -382,40 +382,35 @@
 
 - (BOOL)performFetch:(NSError * _Nullable __autoreleasing *)error
 {
+    NSPredicate *predicate;
     if ((_mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
-        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+        NSPredicate *aPredicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
+        if (predicate) {
+            predicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[aPredicate, predicate]];
+        } else {
+            predicate = aPredicate;
+        }
     }
     if ((_mediaType & PHFetchedResultsMediaTypeVideo) == PHFetchedResultsMediaTypeVideo) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
-        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+        NSPredicate *aPredicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
+        if (predicate) {
+            predicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[aPredicate, predicate]];
+        } else {
+            predicate = aPredicate;
+        }
     }
     if ((_mediaType & PHFetchedResultsMediaTypeAudio) == PHFetchedResultsMediaTypeAudio) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
-        _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
+        NSPredicate *aPredicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
+        if (predicate) {
+            predicate = [NSCompoundPredicate orPredicateWithSubpredicates:@[aPredicate, predicate]];
+        } else {
+            predicate = aPredicate;
+        }
     }
+    _options.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[_options.predicate, predicate]];
     _options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
     self.fetchResult = [PHAsset fetchAssetsInAssetCollection:_assetCollection options:_options];
     return YES;
-}
-
-- (PHFetchOptions *)alterOptions:(PHFetchOptions *)options
-{
-    PHFetchOptions *fetchOptions = [PHFetchOptions new];
-    if ((_mediaType & PHFetchedResultsMediaTypeImage) == PHFetchedResultsMediaTypeImage) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
-        fetchOptions.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[options.predicate, predicate]];
-    }
-    if ((_mediaType & PHFetchedResultsMediaTypeVideo) == PHFetchedResultsMediaTypeVideo) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
-        fetchOptions.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[options.predicate, predicate]];
-    }
-    if ((_mediaType & PHFetchedResultsMediaTypeAudio) == PHFetchedResultsMediaTypeAudio) {
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeAudio];
-        fetchOptions.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[options.predicate, predicate]];
-    }
-    fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
-    return fetchOptions;
 }
 
 - (void)setFetchResult:(PHFetchResult<PHAsset *> *)fetchResult
@@ -474,13 +469,13 @@
 
 - (_PHFetchTask *)findSectionInfoInAssets:(NSArray<PHAsset *> *)assets
                                  sections:(NSMutableArray *)sections
-                         exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
-                      notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset, NSMutableArray <PHFetchedResultsSectionInfo *>*sections))notExistsBlock
-                     completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
+                                   exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
+                                notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset, NSMutableArray <PHFetchedResultsSectionInfo *>*sections))notExistsBlock
+                               completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
 {
     _PHFetchTask *task = [_PHFetchTask new];
     
-//    NSMutableArray *sections = [NSMutableArray array];
+    //    NSMutableArray *sections = [NSMutableArray array];
     
     __block NSCalendar *calendar = [NSCalendar currentCalendar];
     __block NSInteger previousYear = 0;
@@ -582,7 +577,7 @@
                 }
             });
         }
-
+        
     });
     
     return task;
