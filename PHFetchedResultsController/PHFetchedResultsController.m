@@ -719,15 +719,34 @@
 
 - (void)photoLibraryDidChange:(PHChange *)changeInstance
 {
-    PHFetchResultChangeDetails *changesDetails = [changeInstance changeDetailsForFetchResult:self.fetchResult];
+    
+    __block PHFetchResultChangeDetails *changesDetails = [changeInstance changeDetailsForFetchResult:self.fetchResult];
+    
     if (changesDetails == nil) {
         return;
     }
-    self.fetchResult = [changesDetails fetchResultAfterChanges];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate controller:self photoLibraryDidChange:changesDetails];
-    });
+    
+    __weak typeof(self) __self = self;
+    NSMutableArray *sections = _mySections.mutableCopy;
+    
+    NSArray *changeObjects = [changesDetails.insertedObjects arrayByAddingObjectsFromArray:changesDetails.removedObjects];
+    _runningTask = [self findSectionInfoInAssets:changeObjects sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+        [sectionInfo removeCache];
+        sectionInfo.numberOfObjects = sectionInfo.objects.count;
+    } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray<PHFetchedResultsSectionInfo *> *sections) {
+        PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
+        info.delegate = __self;
+        return info;
+    } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
+        @synchronized (self) {
+            _mySections = [NSArray arrayWithArray:sections];
+            _runningTask = nil;
+            [__self.delegate controller:__self photoLibraryDidChange:changesDetails];
+        }
+    }];
+    
 }
+
 - (NSMutableArray *)sortSessions
 {
     NSSortDescriptor *year = [NSSortDescriptor sortDescriptorWithKey:@"self.year" ascending:NO];

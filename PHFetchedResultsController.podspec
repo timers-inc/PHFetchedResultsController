@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "PHFetchedResultsController"
-  s.version      = "2.0.2"
+  s.version      = "2.1.0"
   s.summary      = "A fetchedResultsController for PhotoKit. It can be divided into sections by date PhotoKit"
   s.homepage     = "https://github.com/1amageek/PHFetchedResultsController"
   #s.screenshots	 = ""
