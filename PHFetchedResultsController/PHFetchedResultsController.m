@@ -48,7 +48,7 @@
 {
     self = [super init];
     if (self) {
-        NSCalendar *calendar = [NSCalendar currentCalendar];
+        NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         _dateComponents = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:date];
         _assetCollection = assetCollection;
         _options = options;
@@ -95,8 +95,10 @@
     if (_name) {
         return _name;
     }
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     NSDateFormatter *dateFormatter = [self.delegate dateFormatter];
-    NSDate *date = [[NSCalendar currentCalendar] dateFromComponents:self.dateComponents];
+    dateFormatter.calendar = calendar;
+    NSDate *date = [calendar dateFromComponents:self.dateComponents];
     _name = [dateFormatter stringFromDate:date];
     return _name;
 }
@@ -134,7 +136,7 @@
     NSDateComponents *addDateComponents = [NSDateComponents new];
     NSDate *startDate;
     NSDate *endDate;
-    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     switch (sectionKey) {
         case PHFetchedResultsSectionKeyHour: {
             [dateComponents setYear:self.year];
@@ -142,7 +144,7 @@
             [dateComponents setWeekOfMonth:self.week];
             [dateComponents setDay:self.day];
             [dateComponents setHour:self.hour];
-            startDate = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
+            startDate = [calendar dateFromComponents:dateComponents];
             [addDateComponents setHour:1];
             endDate = [calendar dateByAddingComponents:addDateComponents toDate:startDate options:0];
         }
@@ -152,7 +154,7 @@
             [dateComponents setMonth:self.month];
             [dateComponents setWeekOfMonth:self.week];
             [dateComponents setDay:self.day];
-            startDate = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
+            startDate = [calendar dateFromComponents:dateComponents];
             [addDateComponents setDay:1];
             endDate = [calendar dateByAddingComponents:addDateComponents toDate:startDate options:0];
         }
@@ -162,7 +164,7 @@
             [dateComponents setMonth:self.month];
             [dateComponents setWeekOfMonth:self.week];
             [dateComponents setWeekday:1];
-            startDate = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
+            startDate = [calendar dateFromComponents:dateComponents];
             [addDateComponents setWeekOfMonth:1];
             endDate = [calendar dateByAddingComponents:addDateComponents toDate:startDate options:0];
         }
@@ -170,7 +172,7 @@
         case PHFetchedResultsSectionKeyMonth: {
             [dateComponents setYear:self.year];
             [dateComponents setMonth:self.month];
-            startDate = [[NSCalendar currentCalendar] dateFromComponents:dateComponents];
+            startDate = [calendar dateFromComponents:dateComponents];
             [addDateComponents setMonth:1];
             endDate = [calendar dateByAddingComponents:addDateComponents toDate:startDate options:0];
         }
@@ -477,7 +479,7 @@
     
     //    NSMutableArray *sections = [NSMutableArray array];
     
-    __block NSCalendar *calendar = [NSCalendar currentCalendar];
+    __block NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     __block NSInteger previousYear = 0;
     __block NSInteger previousMonth = 0;
     __block NSInteger previousWeek = 0;
@@ -601,7 +603,7 @@
 
 - (NSIndexPath *)indexPathForAsset:(PHAsset *)asset
 {
-    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     NSDateComponents *dateComponets = [calendar components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfMonth | NSCalendarUnitDay | NSCalendarUnitHour fromDate:asset.creationDate];
     
     NSInteger year = [dateComponets year];

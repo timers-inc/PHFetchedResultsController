@@ -94,7 +94,7 @@ static CGSize AssetGridThumbnailSize;
     
     _fetchedResultsController = [[PHFetchedResultsController alloc] initWithAssetCollection:assetCollection sectionKey:PHFetchedResultsSectionKeyWeek mediaType:PHFetchedResultsMediaTypeImage ignoreLocalIDs:@[]];
     _fetchedResultsController.delegate = self;
-    _fetchedResultsController.dateFormateForSectionTitle = @"yyyy.MM.DD";
+    _fetchedResultsController.dateFormateForSectionTitle = @"yyyy.MM.dd";
     
     [_fetchedResultsController performFetch:nil];
     
