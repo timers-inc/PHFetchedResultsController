@@ -429,10 +429,17 @@
     __block PHFetchResultChangeDetails *fetchResultChangeDetails;
     if (previousFetchResult) {
         fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:previousFetchResult toFetchResult:fetchResult changedObjects:@[]];
-        NSMutableArray *sections = _mySections.mutableCopy;
-        _runningTask = [self findSectionInfoInAssets:fetchResultChangeDetails.removedObjects sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+        __block NSMutableArray *sections = _mySections.mutableCopy;
+        __block NSArray *insertedObjects = fetchResultChangeDetails.insertedObjects;
+        __block NSArray *removedObjects = fetchResultChangeDetails.removedObjects;
+        NSArray *changeObjects = [fetchResultChangeDetails.insertedObjects arrayByAddingObjectsFromArray:fetchResultChangeDetails.removedObjects];
+        _runningTask = [self findSectionInfoInAssets:changeObjects sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo, PHAsset *asset) {
             [sectionInfo removeCache];
-            sectionInfo.numberOfObjects = sectionInfo.objects.count;
+            if ([removedObjects containsObject:asset]) {
+                sectionInfo.numberOfObjects --;
+            } else if ([insertedObjects containsObject:asset]) {
+                sectionInfo.numberOfObjects ++;
+            }
         } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray<PHFetchedResultsSectionInfo *> *sections) {
             PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
             info.delegate = __self;
@@ -449,7 +456,7 @@
     
     [_cache removeAllObjects];
     NSMutableArray *sections = [NSMutableArray array];
-    _runningTask = [self findSectionInfoInAssets:(NSArray *)_fetchResult sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
+    _runningTask = [self findSectionInfoInAssets:(NSArray *)_fetchResult sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo, PHAsset *asset) {
         sectionInfo.numberOfObjects ++;
     } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray *sections) {
         PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
@@ -471,13 +478,11 @@
 
 - (_PHFetchTask *)findSectionInfoInAssets:(NSArray<PHAsset *> *)assets
                                  sections:(NSMutableArray *)sections
-                                   exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo))existsBlock
+                                   exists:(void (^)(PHFetchedResultsSectionInfo *sectionInfo, PHAsset *asset))existsBlock
                                 notExists:(PHFetchedResultsSectionInfo* (^)(PHAsset *asset, NSMutableArray <PHFetchedResultsSectionInfo *>*sections))notExistsBlock
                                completion:(void (^)(NSArray <PHFetchedResultsSectionInfo *>*sections))completionHandler
 {
     _PHFetchTask *task = [_PHFetchTask new];
-    
-    //    NSMutableArray *sections = [NSMutableArray array];
     
     __block NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     __block NSInteger previousYear = 0;
@@ -510,7 +515,7 @@
                     (sectionKey >= PHFetchedResultsSectionKeyHour ? previousHour == hour : YES)) {
                     
                     if (existsBlock) {
-                        existsBlock(sectionInfo);
+                        existsBlock(sectionInfo, asset);
                         if (sectionInfo.numberOfObjects == 0) {
                             @synchronized (task) {
                                 [sections removeObject:sectionInfo];
@@ -542,7 +547,7 @@
                     if (sectionExist) {
                         
                         if (existsBlock) {
-                            existsBlock(sectionInfo);
+                            existsBlock(sectionInfo, asset);
                             if (sectionInfo.numberOfObjects == 0) {
                                 @synchronized (task) {
                                     [sections removeObject:sectionInfo];
@@ -721,32 +726,11 @@
 
 - (void)photoLibraryDidChange:(PHChange *)changeInstance
 {
-    
     __block PHFetchResultChangeDetails *changesDetails = [changeInstance changeDetailsForFetchResult:self.fetchResult];
-    
     if (changesDetails == nil) {
         return;
     }
-    
-    __weak typeof(self) __self = self;
-    NSMutableArray *sections = _mySections.mutableCopy;
-    
-    NSArray *changeObjects = [changesDetails.insertedObjects arrayByAddingObjectsFromArray:changesDetails.removedObjects];
-    _runningTask = [self findSectionInfoInAssets:changeObjects sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo) {
-        [sectionInfo removeCache];
-        sectionInfo.numberOfObjects = sectionInfo.objects.count;
-    } notExists:^PHFetchedResultsSectionInfo *(PHAsset *asset, NSMutableArray<PHFetchedResultsSectionInfo *> *sections) {
-        PHFetchedResultsSectionInfo *info = [[PHFetchedResultsSectionInfo alloc] initWithAssetCollection:self.assetCollection date:asset.creationDate options:self.options];
-        info.delegate = __self;
-        return info;
-    } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
-        @synchronized (self) {
-            _mySections = [NSArray arrayWithArray:sections];
-            _runningTask = nil;
-            [__self.delegate controller:__self photoLibraryDidChange:changesDetails];
-        }
-    }];
-    
+    [self performFetch:nil];
 }
 
 - (NSMutableArray *)sortSessions
