@@ -430,9 +430,10 @@
     if (previousFetchResult) {
         fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:previousFetchResult toFetchResult:fetchResult changedObjects:@[]];
         __block NSMutableArray *sections = _mySections.mutableCopy;
-        __block NSArray *insertedObjects = fetchResultChangeDetails.insertedObjects;
-        __block NSArray *removedObjects = fetchResultChangeDetails.removedObjects;
-        NSArray *changeObjects = [fetchResultChangeDetails.insertedObjects arrayByAddingObjectsFromArray:fetchResultChangeDetails.removedObjects];
+        __block NSArray *insertedObjects = fetchResultChangeDetails.insertedObjects ? fetchResultChangeDetails.insertedObjects : @[];
+        __block NSArray *removedObjects = fetchResultChangeDetails.removedObjects ? fetchResultChangeDetails.removedObjects : @[];
+        NSArray *changeObjects = [insertedObjects arrayByAddingObjectsFromArray:removedObjects];
+        
         _runningTask = [self findSectionInfoInAssets:changeObjects sections:sections exists:^(PHFetchedResultsSectionInfo *sectionInfo, PHAsset *asset) {
             [sectionInfo removeCache];
             if ([removedObjects containsObject:asset]) {
