@@ -359,7 +359,7 @@
         _sectionKey = sectionKey;
         _mediaType = mediaType;
         
-        _mySections = [NSMutableArray array];
+        _mySections = nil;
         _options = [PHFetchOptions new];
         if (ignoreLocalIDs) {
             _options.predicate = [NSPredicate predicateWithFormat:@"NOT (localIdentifier IN %@)", ignoreLocalIDs];
@@ -427,7 +427,7 @@
     }
     
     __block PHFetchResultChangeDetails *fetchResultChangeDetails;
-    if (previousFetchResult) {
+    if (previousFetchResult && _mySections != nil) {
         fetchResultChangeDetails = [PHFetchResultChangeDetails changeDetailsFromFetchResult:previousFetchResult toFetchResult:fetchResult changedObjects:@[]];
         __block NSMutableArray *sections = _mySections.mutableCopy;
         __block NSArray *insertedObjects = fetchResultChangeDetails.insertedObjects ? fetchResultChangeDetails.insertedObjects : @[];
