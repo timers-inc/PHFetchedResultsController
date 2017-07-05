@@ -636,7 +636,7 @@
     
     if (sectionInfo) {
         NSInteger index = [sectionInfo.objects indexOfObject:asset];
-        return [NSIndexPath indexPathForItem:section inSection:index];
+        return [NSIndexPath indexPathForItem:index inSection:section];
     }
     
     return nil;
