@@ -10,7 +10,6 @@
 @import PhotosUI;
 @import Photos;
 
-
 typedef NS_ENUM(NSUInteger, PHFetchedResultsSectionKey) {
     PHFetchedResultsSectionKeyYear = 0,
     PHFetchedResultsSectionKeyMonth,
@@ -25,7 +24,6 @@ typedef NS_OPTIONS(NSUInteger, PHFetchedResultsMediaType) {
     PHFetchedResultsMediaTypeVideo = 1 << 2,
     PHFetchedResultsMediaTypeAudio = 1 << 3,
 };
-
 
 NS_ASSUME_NONNULL_BEGIN
 

@@ -18,6 +18,8 @@
 		12A0B8BF1C0C577B00C4142D /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12A0B8BC1C0C577B00C4142D /* ViewController.m */; };
 		12A0B8C01C0C577B00C4142D /* GridCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 12A0B8BE1C0C577B00C4142D /* GridCell.m */; };
 		12C1F7861C2D28060068F418 /* PHFetchedResultsController.m in Sources */ = {isa = PBXBuildFile; fileRef = 12C1F7851C2D28060068F418 /* PHFetchedResultsController.m */; };
+		ADED0547225365D000B300A0 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADED0545225365D000B300A0 /* Photos.framework */; };
+		ADED0548225365D000B300A0 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADED0546225365D000B300A0 /* PhotosUI.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +55,8 @@
 		12A0B8BE1C0C577B00C4142D /* GridCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GridCell.m; sourceTree = "<group>"; };
 		12C1F7841C2D28060068F418 /* PHFetchedResultsController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PHFetchedResultsController.h; sourceTree = "<group>"; };
 		12C1F7851C2D28060068F418 /* PHFetchedResultsController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PHFetchedResultsController.m; sourceTree = "<group>"; };
+		ADED0545225365D000B300A0 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
+		ADED0546225365D000B300A0 /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +64,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ADED0547225365D000B300A0 /* Photos.framework in Frameworks */,
+				ADED0548225365D000B300A0 /* PhotosUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +85,7 @@
 				1293A8B91C0C53A70049912A /* PHFetchedResultsController */,
 				1293A8D31C0C53A70049912A /* PHFetchedResultsControllerTests */,
 				1293A8B81C0C53A70049912A /* Products */,
+				ADED0544225365D000B300A0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -133,6 +140,15 @@
 			path = PHFetchedResultsControllerTests;
 			sourceTree = "<group>";
 		};
+		ADED0544225365D000B300A0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				ADED0545225365D000B300A0 /* Photos.framework */,
+				ADED0546225365D000B300A0 /* PhotosUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -177,12 +193,12 @@
 		1293A8AF1C0C53A70049912A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0710;
+				LastUpgradeCheck = 1020;
 				ORGANIZATIONNAME = "Stamp inc.";
 				TargetAttributes = {
 					1293A8B61C0C53A70049912A = {
 						CreatedOnToolsVersion = 7.1.1;
-						DevelopmentTeam = 88ACA86N96;
+						DevelopmentTeam = XE9C97EHP4;
 					};
 					1293A8CF1C0C53A70049912A = {
 						CreatedOnToolsVersion = 7.1.1;
@@ -192,7 +208,7 @@
 			};
 			buildConfigurationList = 1293A8B21C0C53A70049912A /* Build configuration list for PBXProject "PHFetchedResultsController" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -278,17 +294,28 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -321,17 +348,28 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -360,10 +398,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = XE9C97EHP4;
 				INFOPLIST_FILE = PHFetchedResultsController/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = inc.stamp.PHFetchedResultsController;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.timers-inc.tfam.PHFetchedResultsController";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 			};
@@ -375,10 +414,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = XE9C97EHP4;
 				INFOPLIST_FILE = PHFetchedResultsController/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = inc.stamp.PHFetchedResultsController;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.timers-inc.tfam.PHFetchedResultsController";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 			};

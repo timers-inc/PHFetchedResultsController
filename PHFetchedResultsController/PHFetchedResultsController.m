@@ -447,8 +447,8 @@
             return info;
         } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
             @synchronized (self) {
-                _mySections = [NSArray arrayWithArray:sections];
-                _runningTask = nil;
+                self->_mySections = [__self sortSectionsWithSectionInfos:sections];
+                self->_runningTask = nil;
                 [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
             }
         }];
@@ -465,8 +465,8 @@
         return info;
     } completion:^(NSArray<PHFetchedResultsSectionInfo *> *sections) {
         @synchronized (self) {
-            _mySections = [NSArray arrayWithArray:sections];
-            _runningTask = nil;
+            self->_mySections = [__self sortSectionsWithSectionInfos:sections];
+            self->_runningTask = nil;
             [__self.delegate controller:__self photoLibraryDidChange:fetchResultChangeDetails];
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
                 [sections enumerateObjectsUsingBlock:^(PHFetchedResultsSectionInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -734,7 +734,7 @@
     [self performFetch:nil];
 }
 
-- (NSMutableArray *)sortSessions
+- (NSMutableArray <PHFetchedResultsSectionInfo *> *)sortSectionsWithSectionInfos:(NSArray <PHFetchedResultsSectionInfo *> *)sectionInfos
 {
     NSSortDescriptor *year = [NSSortDescriptor sortDescriptorWithKey:@"self.year" ascending:NO];
     NSSortDescriptor *month = [NSSortDescriptor sortDescriptorWithKey:@"self.month" ascending:NO];
@@ -742,7 +742,7 @@
     NSSortDescriptor *day = [NSSortDescriptor sortDescriptorWithKey:@"self.day" ascending:NO];
     NSSortDescriptor *hour = [NSSortDescriptor sortDescriptorWithKey:@"self.hour" ascending:NO];
     
-    return (NSMutableArray *)[self.mySections sortedArrayUsingDescriptors:@[year, month, week, day, hour]];
+    return (NSMutableArray <PHFetchedResultsSectionInfo *> *)[[sectionInfos sortedArrayUsingDescriptors:@[year, month, week, day, hour]] mutableCopy];
 }
 
 @end
